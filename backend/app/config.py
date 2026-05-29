@@ -7,10 +7,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-jwt-secret")
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL",
-        "postgresql://payslip:payslip_secret@localhost:5432/payslip_db",
-    )
+
+    _default_pg = "postgresql://payslip:payslip_secret@localhost:5432/payslip_db"
+    if os.getenv("USE_SQLITE", "false").lower() == "true":
+        SQLALCHEMY_DATABASE_URI = f"sqlite:///{BASE_DIR / 'dev.db'}"
+    else:
+        SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", _default_pg)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_ACCESS_TOKEN_EXPIRES = 60 * 60 * 8  # 8 hours
 
