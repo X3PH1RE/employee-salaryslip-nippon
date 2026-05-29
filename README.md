@@ -81,10 +81,17 @@ All settings are driven by environment variables. **Do not commit secrets.**
 1. **Root Directory** → `backend`
 2. **Install Command** (override ON): `pip install -r requirements.txt` — leave **Build Command** empty  
    (`backend/vercel.json` also sets this if dashboard overrides are off)
-3. **Required env vars:** `DATABASE_URL` (Supabase), `SECRET_KEY`, `JWT_SECRET_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, plus SMTP/admin vars from [backend/.env.example](backend/.env.example)
-4. Test: `https://your-api.vercel.app/api/health` → `{"status":"ok"}`
+3. **Required env vars:** `DATABASE_URL` (Supabase **Session pooler**, port **6543** — not `db.*:5432`), `SECRET_KEY`, `JWT_SECRET_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, plus SMTP/admin vars from [backend/.env.example](backend/.env.example)
 
-SQLite is auto-disabled on Vercel. If you get **500 FUNCTION_INVOCATION_FAILED**, open **Deployments → Logs** — usually missing/wrong `DATABASE_URL`.
+   Get pooler URI: Supabase → **Project Settings → Database → Connection string → Session pooler → URI**
+
+4. **First deploy:** In Supabase **SQL Editor**, run [docs/schema.sql](docs/schema.sql) to create tables (Vercel skips auto `create_all`).
+
+5. Test: `https://your-api.vercel.app/api/health` → `{"status":"ok"}`
+
+6. Setup admin: `POST https://your-api.vercel.app/api/auth/setup` (note the `/api` prefix)
+
+**Common error:** `Cannot assign requested address` on `db.*.supabase.co:5432` → switch `DATABASE_URL` to the **pooler** URL (port **6543**).
 
 **Frontend (separate project):** Root Directory `frontend`, set `VITE_API_URL=https://your-api.vercel.app/api` (see [frontend/.env.example](frontend/.env.example)).
 
