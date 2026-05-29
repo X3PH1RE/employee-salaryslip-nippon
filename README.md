@@ -114,7 +114,9 @@ celery -A celery_worker.celery worker --loglevel=info --pool=solo
 | POST | `/api/payroll/upload/commit` | Save payroll batch |
 | POST | `/api/payslips/generate` | Start PDF job |
 | POST | `/api/payslips/dispatch` | Start email job |
-| GET | `/api/payslips/jobs/:id` | Job status |
+| GET | `/api/payslips/jobs/:id` | Job status + document list |
+| GET | `/api/payslips/documents/:id/download` | Download one PDF |
+| GET | `/api/payslips/jobs/:id/download` | Download all PDFs as ZIP |
 | GET | `/api/audit` | Audit log |
 
 ## Net salary formula

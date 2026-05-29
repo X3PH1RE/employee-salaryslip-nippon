@@ -73,6 +73,8 @@ class StorageService:
 
     @staticmethod
     def exists(uri_or_path: str) -> bool:
+        if not uri_or_path or not str(uri_or_path).strip():
+            return False
         try:
             StorageService.download_bytes(uri_or_path)
             return True

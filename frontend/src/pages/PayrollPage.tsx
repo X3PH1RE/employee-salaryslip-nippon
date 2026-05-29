@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import api, { type PayrollPreviewRow, type PreviewResult } from "@/lib/api"
+import api, {
+  downloadPayslipPdf,
+  downloadPayslipZip,
+  type PayslipDocumentRow,
+  type PayrollPreviewRow,
+  type PreviewResult,
+} from "@/lib/api"
+import { Download } from "lucide-react"
 import { DataTable } from "@/components/DataTable"
 import { FileUploadZone } from "@/components/FileUploadZone"
 import { Button } from "@/components/ui/button"
@@ -26,6 +33,8 @@ export function PayrollPage() {
   const [message, setMessage] = useState("")
   const [job, setJob] = useState<Job | null>(null)
   const [emailStats, setEmailStats] = useState<EmailStats | null>(null)
+  const [documents, setDocuments] = useState<PayslipDocumentRow[]>([])
+  const [downloadingId, setDownloadingId] = useState<number | null>(null)
 
   const loadBatches = useCallback(() => {
     api.get("/payroll/batches").then((r) => setBatches(r.data))
@@ -97,8 +106,13 @@ export function PayrollPage() {
       const { data } = await api.post("/payslips/generate", { batch_id: batchId })
       setJob(data.job)
       pollJob(data.job.id)
-    } catch {
-      setMessage("Failed to queue PDF generation")
+      setMessage(`PDF job #${data.job.id} started`)
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
+          : null
+      setMessage(msg || "Failed to queue PDF generation")
       setLoading(false)
     }
   }
@@ -108,12 +122,37 @@ export function PayrollPage() {
       const { data } = await api.get(`/payslips/jobs/${jobId}`)
       setJob(data.job)
       setEmailStats(data.email_stats)
+      setDocuments(data.documents ?? [])
       if (["completed", "completed_with_errors"].includes(data.job.status)) {
         clearInterval(interval)
         setLoading(false)
         setMessage(`PDFs ready: ${data.job.completed} generated, ${data.job.failed} failed`)
       }
     }, 2000)
+  }
+
+  const downloadOne = async (doc: PayslipDocumentRow) => {
+    if (!doc.downloadable || !doc.filename) return
+    setDownloadingId(doc.id)
+    try {
+      await downloadPayslipPdf(doc.id, doc.filename)
+    } catch {
+      setMessage("Download failed")
+    } finally {
+      setDownloadingId(null)
+    }
+  }
+
+  const downloadAll = async () => {
+    if (!job) return
+    setLoading(true)
+    try {
+      await downloadPayslipZip(job.id)
+    } catch {
+      setMessage("Could not download ZIP")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const dispatchEmails = async () => {
@@ -228,9 +267,45 @@ export function PayrollPage() {
                 </p>
               )}
               {["completed", "completed_with_errors"].includes(job.status) && (
-                <Button className="mt-4" size="sm" onClick={dispatchEmails} disabled={loading}>
-                  Send payslip emails
-                </Button>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={downloadAll} disabled={loading}>
+                    <Download className="mr-1.5 h-3.5 w-3.5" />
+                    Download all (ZIP)
+                  </Button>
+                  <Button size="sm" onClick={dispatchEmails} disabled={loading}>
+                    Send payslip emails
+                  </Button>
+                </div>
+              )}
+
+              {documents.length > 0 && (
+                <ul className="mt-4 space-y-2 border-t border-[var(--color-border)] pt-4">
+                  {documents.map((doc) => (
+                    <li
+                      key={doc.id}
+                      className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                    >
+                      <span className="text-[var(--color-ink)]">
+                        {doc.employee_name ?? "Unknown"} ({doc.employee_id ?? "—"})
+                        {doc.status === "failed" && (
+                          <span className="ml-2 text-[var(--color-danger)]">failed</span>
+                        )}
+                      </span>
+                      {doc.downloadable && doc.filename && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8"
+                          disabled={downloadingId === doc.id}
+                          onClick={() => downloadOne(doc)}
+                        >
+                          <Download className="mr-1 h-3.5 w-3.5" />
+                          PDF
+                        </Button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           )}

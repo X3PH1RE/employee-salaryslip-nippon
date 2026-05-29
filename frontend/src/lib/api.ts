@@ -43,3 +43,37 @@ export type EmployeePreviewRow = {
   birth_year?: number
   department?: string
 }
+
+export type PayslipDocumentRow = {
+  id: number
+  job_id: number
+  status: string
+  employee_id: string | null
+  employee_name: string | null
+  filename: string | null
+  downloadable: boolean
+  error_message?: string | null
+}
+
+function saveBlob(blob: Blob, filename: string) {
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  a.click()
+  window.URL.revokeObjectURL(url)
+}
+
+export async function downloadPayslipPdf(documentId: number, filename: string) {
+  const { data } = await api.get(`/payslips/documents/${documentId}/download`, {
+    responseType: "blob",
+  })
+  saveBlob(data, filename)
+}
+
+export async function downloadPayslipZip(jobId: number) {
+  const { data } = await api.get(`/payslips/jobs/${jobId}/download`, {
+    responseType: "blob",
+  })
+  saveBlob(data, `payslips_job_${jobId}.zip`)
+}
