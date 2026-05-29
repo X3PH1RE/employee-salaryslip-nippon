@@ -1,0 +1,6 @@
+employee_id,name,email,designation,birth_year,department
+EMP001,Ananya Sharma,ananya.sharma@company.com,Senior Engineer,1992,Engineering
+EMP002,Rahul Mehta,rahul.mehta@company.com,Product Manager,1988,Product
+EMP003,Priya Nair,priya.nair@company.com,HR Specialist,1995,Human Resources
+EMP004,Vikram Singh,vikram.singh@company.com,Finance Analyst,1990,Finance
+EMP005,Meera Iyer,meera.iyer@company.com,Design Lead,1993,Design

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Salary Slip — {{ month_name }} {{ year }}</title>
+  <style>
+    @page { size: A4; margin: 2cm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #1a1a1a;
+      font-size: 11pt;
+      line-height: 1.5;
+    }
+    .header {
+      border-bottom: 2px solid #3d4f3e;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    .company { font-size: 18pt; font-weight: 600; color: #3d4f3e; letter-spacing: 0.02em; }
+    .subtitle { font-size: 10pt; color: #666; margin-top: 4px; }
+    .meta { display: flex; justify-content: space-between; margin-bottom: 28px; }
+    .meta-block h3 { font-size: 9pt; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 6px; }
+    .meta-block p { font-size: 11pt; }
+    table.earnings {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    table.earnings th, table.earnings td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid #e8e6e1;
+    }
+    table.earnings th {
+      background: #f5f3ef;
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #555;
+    }
+    table.earnings td.amount { text-align: right; font-variant-numeric: tabular-nums; }
+    tr.net td {
+      font-weight: 700;
+      font-size: 12pt;
+      border-top: 2px solid #3d4f3e;
+      background: #f9f8f5;
+    }
+    .footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid #e8e6e1;
+      font-size: 9pt;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="company">{{ company_name }}</div>
+    <div class="subtitle">Salary Statement — {{ month_name }} {{ year }}</div>
+  </div>
+
+  <div class="meta">
+    <div class="meta-block">
+      <h3>Employee</h3>
+      <p><strong>{{ name }}</strong></p>
+      <p>ID: {{ employee_id }}</p>
+      <p>{{ designation }}</p>
+      <p>{{ department }}</p>
+    </div>
+    <div class="meta-block" style="text-align: right;">
+      <h3>Period</h3>
+      <p>{{ month_name }} {{ year }}</p>
+      <p>Generated: {{ generated_at }}</p>
+    </div>
+  </div>
+
+  <table class="earnings">
+    <thead>
+      <tr>
+        <th>Component</th>
+        <th style="text-align: right;">Amount (INR)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Base Salary</td><td class="amount">{{ base_salary }}</td></tr>
+      <tr><td>House Rent Allowance (HRA)</td><td class="amount">{{ hra }}</td></tr>
+      <tr><td>Allowances</td><td class="amount">{{ allowances }}</td></tr>
+      <tr><td>Deductions</td><td class="amount">− {{ deductions }}</td></tr>
+      <tr class="net">
+        <td>Net Salary</td>
+        <td class="amount">{{ net_salary }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    This is a system-generated document. For queries, contact your HR department.
+  </div>
+</body>
+</html>
