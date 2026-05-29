@@ -33,14 +33,16 @@ export function FileUploadZone({ accept = ".csv,.xlsx,.xls", onFile, disabled }:
         if (!disabled) handle(e.dataTransfer.files[0])
       }}
       className={cn(
-        "flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-8 py-12 transition-colors",
+        "flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-10 sm:px-8 sm:py-12 transition-colors",
         drag ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)]" : "border-[var(--color-border)] hover:border-[var(--color-muted)]",
         disabled && "pointer-events-none opacity-50"
       )}
     >
       <Upload className="mb-3 h-8 w-8 text-[var(--color-muted)]" strokeWidth={1.25} />
-      <p className="text-sm font-medium text-[var(--color-ink)]">Drop file here or click to browse</p>
-      <p className="mt-1 text-xs text-[var(--color-muted)]">CSV or Excel (.xlsx)</p>
+      <p className="text-center text-sm font-medium text-[var(--color-ink)]">
+        Drop file here or tap to browse
+      </p>
+      <p className="mt-1 text-center text-xs text-[var(--color-muted)]">CSV or Excel (.xlsx)</p>
       <input
         ref={inputRef}
         type="file"

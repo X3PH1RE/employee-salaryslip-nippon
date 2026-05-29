@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom"
-import { FileText, LayoutDashboard, LogOut, Upload, Users } from "lucide-react"
+import { FileText, LayoutDashboard, LogOut, Upload, Users, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const links = [
@@ -9,50 +9,91 @@ const links = [
   { to: "/audit", label: "Activity", icon: FileText },
 ]
 
-export function Sidebar() {
+type SidebarProps = {
+  mobileOpen?: boolean
+  onClose?: () => void
+}
+
+export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const navigate = useNavigate()
 
+  const handleNav = () => {
+    onClose?.()
+  }
+
+  const signOut = () => {
+    localStorage.removeItem("token")
+    onClose?.()
+    navigate("/login")
+  }
+
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
-      <div className="border-b border-[var(--color-border)] px-6 py-8">
-        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--color-muted)]">
-          Payroll
-        </p>
-        <h1 className="font-display mt-1 text-2xl text-[var(--color-ink)]">Slip Desk</h1>
-      </div>
-      <nav className="flex flex-1 flex-col gap-1 p-4">
-        {links.map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === "/"}
-            className={({ isActive }) =>
-              cn(
-                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
-                isActive
-                  ? "bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-medium"
-                  : "text-[var(--color-muted)] hover:bg-[var(--color-canvas)] hover:text-[var(--color-ink)]"
-              )
-            }
-          >
-            <Icon className="h-4 w-4" strokeWidth={1.75} />
-            {label}
-          </NavLink>
-        ))}
-      </nav>
-      <div className="border-t border-[var(--color-border)] p-4">
+    <>
+      {mobileOpen && (
         <button
           type="button"
-          onClick={() => {
-            localStorage.removeItem("token")
-            navigate("/login")
-          }}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-muted)] hover:bg-[var(--color-canvas)] hover:text-[var(--color-ink)]"
-        >
-          <LogOut className="h-4 w-4" strokeWidth={1.75} />
-          Sign out
-        </button>
-      </div>
-    </aside>
+          aria-label="Close menu"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex w-[min(100vw-3rem,17rem)] flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-transform duration-200 ease-out lg:static lg:z-auto lg:w-56 lg:shrink-0 lg:translate-x-0",
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div className="flex items-start justify-between border-b border-[var(--color-border)] px-5 py-6 sm:px-6 sm:py-8">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--color-muted)]">
+              Payroll
+            </p>
+            <h1 className="font-display mt-1 text-xl text-[var(--color-ink)] sm:text-2xl">Slip Desk</h1>
+          </div>
+          <button
+            type="button"
+            aria-label="Close navigation"
+            className="rounded-md p-2 text-[var(--color-muted)] hover:bg-[var(--color-canvas)] lg:hidden"
+            onClick={onClose}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3 sm:p-4">
+          {links.map(({ to, label, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === "/"}
+              onClick={handleNav}
+              className={({ isActive }) =>
+                cn(
+                  "flex min-h-11 items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
+                  isActive
+                    ? "bg-[var(--color-accent-soft)] font-medium text-[var(--color-accent)]"
+                    : "text-[var(--color-muted)] hover:bg-[var(--color-canvas)] hover:text-[var(--color-ink)]"
+                )
+              }
+            >
+              <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="border-t border-[var(--color-border)] p-3 sm:p-4">
+          <button
+            type="button"
+            onClick={signOut}
+            className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--color-muted)] hover:bg-[var(--color-canvas)] hover:text-[var(--color-ink)]"
+          >
+            <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+            Sign out
+          </button>
+        </div>
+      </aside>
+    </>
   )
 }

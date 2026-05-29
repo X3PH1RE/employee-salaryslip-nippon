@@ -4,7 +4,8 @@ import api, { type EmployeePreviewRow, type PreviewResult } from "@/lib/api"
 import { DataTable } from "@/components/DataTable"
 import { FileUploadZone } from "@/components/FileUploadZone"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PageHeader } from "@/components/layout/PageHeader"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, cardHeaderRow } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
 export function EmployeesPage() {
@@ -67,10 +68,10 @@ export function EmployeesPage() {
 
   return (
     <div>
-      <header className="mb-10">
-        <h2 className="font-display text-3xl text-[var(--color-ink)]">Employees</h2>
-        <p className="mt-1 text-[var(--color-muted)]">Master data — ID, name, email, designation</p>
-      </header>
+      <PageHeader
+        title="Employees"
+        description="Master data — ID, name, email, designation"
+      />
 
       <Card className="mb-8">
         <CardHeader>
@@ -85,8 +86,8 @@ export function EmployeesPage() {
 
       {preview && (
         <Card className="mb-8">
-          <CardHeader className="flex-row flex-wrap items-center justify-between gap-4">
-            <div>
+          <CardHeader className={cardHeaderRow}>
+            <div className="min-w-0">
               <CardTitle>Preview</CardTitle>
               <CardDescription>
                 {preview.count} rows ·{" "}
@@ -97,7 +98,11 @@ export function EmployeesPage() {
                 )}
               </CardDescription>
             </div>
-            <Button onClick={commit} disabled={!preview.valid || loading}>
+            <Button
+              className="w-full shrink-0 sm:w-auto"
+              onClick={commit}
+              disabled={!preview.valid || loading}
+            >
               Import employees
             </Button>
           </CardHeader>

@@ -11,7 +11,8 @@ import { Download } from "lucide-react"
 import { DataTable } from "@/components/DataTable"
 import { FileUploadZone } from "@/components/FileUploadZone"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PageHeader } from "@/components/layout/PageHeader"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, cardHeaderRow } from "@/components/ui/card"
 type Batch = { id: number; month: number; year: number; record_count: number; status: string }
 type Job = {
   id: number
@@ -177,12 +178,10 @@ export function PayrollPage() {
 
   return (
     <div>
-      <header className="mb-10">
-        <h2 className="font-display text-3xl text-[var(--color-ink)]">Payroll</h2>
-        <p className="mt-1 text-[var(--color-muted)]">
-          Upload monthly salary data mapped by employee ID
-        </p>
-      </header>
+      <PageHeader
+        title="Payroll"
+        description="Upload monthly salary data mapped by employee ID"
+      />
 
       <Card className="mb-8">
         <CardHeader>
@@ -198,14 +197,18 @@ export function PayrollPage() {
 
       {preview && (
         <Card className="mb-8">
-          <CardHeader className="flex-row flex-wrap items-center justify-between gap-4">
-            <div>
+          <CardHeader className={cardHeaderRow}>
+            <div className="min-w-0">
               <CardTitle>Preview before automation</CardTitle>
               <CardDescription>
                 {preview.count} records · Net = Base + HRA + Allowances − Deductions
               </CardDescription>
             </div>
-            <Button onClick={commit} disabled={!preview.valid || loading}>
+            <Button
+              className="w-full shrink-0 sm:w-auto"
+              onClick={commit}
+              disabled={!preview.valid || loading}
+            >
               Confirm &amp; save batch
             </Button>
           </CardHeader>
@@ -220,7 +223,7 @@ export function PayrollPage() {
                 ))}
               </ul>
             )}
-            <DataTable columns={columns} data={preview.preview} />
+            <DataTable columns={columns} data={preview.preview} minWidth={720} />
           </CardContent>
         </Card>
       )}
@@ -237,8 +240,11 @@ export function PayrollPage() {
         <CardContent className="space-y-4">
           <ul className="divide-y divide-[var(--color-border)]">
             {batches.map((b) => (
-              <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0">
-                <div>
+              <li
+                key={b.id}
+                className="flex flex-col gap-3 py-4 first:pt-0 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
                   <p className="font-medium">
                     {MONTHS[b.month]} {b.year}
                   </p>
@@ -246,16 +252,15 @@ export function PayrollPage() {
                     {b.record_count} employees · Batch #{b.id}
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => generate(b.id)}
-                    disabled={loading}
-                  >
-                    Generate PDFs
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => generate(b.id)}
+                  disabled={loading}
+                >
+                  Generate PDFs
+                </Button>
               </li>
             ))}
           </ul>
@@ -273,7 +278,7 @@ export function PayrollPage() {
                     Email: {emailStats.sent} sent, {emailStats.failed} failed, {emailStats.pending} pending
                   </p>
                   {emailStats.failures && emailStats.failures.length > 0 && (
-                    <ul className="mt-2 space-y-1 rounded-md bg-red-50 p-3 text-xs text-red-900">
+                    <ul className="mt-2 space-y-1 rounded-md bg-red-50 p-3 text-xs break-words text-red-900">
                       {emailStats.failures.map((f, i) => (
                         <li key={i}>
                           <strong>{f.email}:</strong> {f.error}
@@ -284,12 +289,23 @@ export function PayrollPage() {
                 </div>
               )}
               {["completed", "completed_with_errors"].includes(job.status) && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={downloadAll} disabled={loading}>
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={downloadAll}
+                    disabled={loading}
+                  >
                     <Download className="mr-1.5 h-3.5 w-3.5" />
                     Download all (ZIP)
                   </Button>
-                  <Button size="sm" onClick={dispatchEmails} disabled={loading}>
+                  <Button
+                    size="sm"
+                    className="w-full sm:w-auto"
+                    onClick={dispatchEmails}
+                    disabled={loading}
+                  >
                     Send payslip emails
                   </Button>
                 </div>
@@ -300,9 +316,9 @@ export function PayrollPage() {
                   {documents.map((doc) => (
                     <li
                       key={doc.id}
-                      className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                      className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <span className="text-[var(--color-ink)]">
+                      <span className="min-w-0 text-[var(--color-ink)]">
                         {doc.employee_name ?? "Unknown"} ({doc.employee_id ?? "—"})
                         {doc.status === "failed" && (
                           <span className="ml-2 text-[var(--color-danger)]">failed</span>
@@ -312,7 +328,7 @@ export function PayrollPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8"
+                          className="h-8 w-full sm:w-auto"
                           disabled={downloadingId === doc.id}
                           onClick={() => downloadOne(doc)}
                         >

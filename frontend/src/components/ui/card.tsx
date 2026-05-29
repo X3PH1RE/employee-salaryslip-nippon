@@ -13,7 +13,7 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
 }
 
 export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("flex flex-col gap-1 p-6 pb-4", className)} {...props} />
+  return <div className={cn("flex flex-col gap-1 p-4 pb-3 sm:p-6 sm:pb-4", className)} {...props} />
 }
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
@@ -30,5 +30,8 @@ export function CardDescription({ className, ...props }: React.HTMLAttributes<HT
 }
 
 export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("p-6 pt-0", className)} {...props} />
+  return <div className={cn("p-4 pt-0 sm:p-6 sm:pt-0", className)} {...props} />
 }
+
+/** Stack title and action button on small screens */
+export const cardHeaderRow = "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"

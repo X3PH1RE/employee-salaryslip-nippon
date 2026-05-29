@@ -35,7 +35,7 @@ export function LoginPage() {
           <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-[var(--color-muted)]">
             Internal use
           </p>
-          <h1 className="font-display mt-2 text-4xl text-[var(--color-ink)]">Slip Desk</h1>
+          <h1 className="font-display mt-2 text-3xl text-[var(--color-ink)] sm:text-4xl">Slip Desk</h1>
           <p className="mt-2 text-sm text-[var(--color-muted)]">
             Salary slip generation &amp; dispatch
           </p>

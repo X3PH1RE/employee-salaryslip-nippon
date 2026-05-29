@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import api from "@/lib/api"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PageHeader } from "@/components/layout/PageHeader"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, cardHeaderRow } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -29,34 +30,34 @@ export function DashboardPage() {
 
   return (
     <div>
-      <header className="mb-10">
-        <h2 className="font-display text-3xl text-[var(--color-ink)]">Overview</h2>
-        <p className="mt-1 text-[var(--color-muted)]">Upload payroll, generate slips, and dispatch emails</p>
-      </header>
+      <PageHeader
+        title="Overview"
+        description="Upload payroll, generate slips, and dispatch emails"
+      />
 
-      <div className="mb-10 grid gap-4 sm:grid-cols-3">
+      <div className="mb-8 grid gap-3 sm:mb-10 sm:grid-cols-3 sm:gap-4">
         {[
           { label: "Employees on file", value: employees },
           { label: "Payroll batches", value: batches.length },
           { label: "Recent jobs", value: jobs.length },
         ].map((s) => (
           <Card key={s.label}>
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 sm:pt-6">
               <p className="text-xs uppercase tracking-wider text-[var(--color-muted)]">{s.label}</p>
-              <p className="font-display mt-2 text-4xl text-[var(--color-ink)]">{s.value}</p>
+              <p className="font-display mt-2 text-3xl text-[var(--color-ink)] sm:text-4xl">{s.value}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <div>
+          <CardHeader className={cardHeaderRow}>
+            <div className="min-w-0">
               <CardTitle>Recent payroll</CardTitle>
               <CardDescription>Monthly upload batches</CardDescription>
             </div>
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" className="w-full shrink-0 sm:w-auto" asChild>
               <Link to="/payroll">Upload</Link>
             </Button>
           </CardHeader>
@@ -66,11 +67,14 @@ export function DashboardPage() {
                 <li className="text-sm text-[var(--color-muted)]">No batches yet</li>
               ) : (
                 batches.map((b) => (
-                  <li key={b.id} className="flex items-center justify-between text-sm">
+                  <li
+                    key={b.id}
+                    className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between"
+                  >
                     <span>
                       {MONTHS[b.month]} {b.year} · {b.record_count} records
                     </span>
-                    <Badge>{b.status}</Badge>
+                    <Badge className="w-fit">{b.status}</Badge>
                   </li>
                 ))
               )}
@@ -89,7 +93,10 @@ export function DashboardPage() {
                 <li className="text-sm text-[var(--color-muted)]">No jobs yet</li>
               ) : (
                 jobs.map((j) => (
-                  <li key={j.id} className="flex items-center justify-between text-sm">
+                  <li
+                    key={j.id}
+                    className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between"
+                  >
                     <span>Job #{j.id} · Batch {j.batch_id}</span>
                     <span className="text-[var(--color-muted)]">
                       {j.completed}/{j.total} · {j.status}

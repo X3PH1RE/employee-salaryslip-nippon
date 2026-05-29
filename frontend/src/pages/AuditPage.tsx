@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import api from "@/lib/api"
+import { PageHeader } from "@/components/layout/PageHeader"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 type Log = {
@@ -21,10 +22,10 @@ export function AuditPage() {
 
   return (
     <div>
-      <header className="mb-10">
-        <h2 className="font-display text-3xl text-[var(--color-ink)]">Activity</h2>
-        <p className="mt-1 text-[var(--color-muted)]">Audit trail for uploads, PDFs, and emails</p>
-      </header>
+      <PageHeader
+        title="Activity"
+        description="Audit trail for uploads, PDFs, and emails"
+      />
 
       <Card>
         <CardHeader>
@@ -38,16 +39,16 @@ export function AuditPage() {
                 key={log.id}
                 className="border-b border-[var(--color-border)] pb-4 last:border-0 last:pb-0"
               >
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-2">
                   <span className="text-sm font-medium text-[var(--color-ink)]">
                     {log.action.replace(/_/g, " ")}
                   </span>
-                  <time className="text-xs text-[var(--color-muted)]">
+                  <time className="shrink-0 text-xs text-[var(--color-muted)]">
                     {new Date(log.created_at).toLocaleString()}
                   </time>
                 </div>
                 {log.details && (
-                  <p className="mt-1 text-sm text-[var(--color-muted)]">{log.details}</p>
+                  <p className="mt-1 text-sm break-words text-[var(--color-muted)]">{log.details}</p>
                 )}
                 <p className="mt-0.5 text-xs text-[var(--color-muted)]">
                   {log.admin_email}
