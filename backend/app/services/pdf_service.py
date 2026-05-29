@@ -1,11 +1,11 @@
-import os
+import io
 from datetime import datetime
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from app.config import Config
 from app.models.payroll import PayrollRecord
+from app.services.storage_service import StorageService
 from app.services.upload_service import UploadService
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
@@ -45,27 +45,21 @@ class PDFGenerationService:
         }
 
     @staticmethod
-    def generate_pdf(record: PayrollRecord, job_id: int) -> str:
-        UploadService.ensure_dirs()
-        ctx = PDFGenerationService.build_context(record)
-        html = PDFGenerationService._env().get_template("payslip.html").render(**ctx)
-
-        out_dir = Path(Config.PAYSLIP_FOLDER) / f"job_{job_id}"
-        out_dir.mkdir(parents=True, exist_ok=True)
-        filename = f"payslip_{record.employee_code}_{record.month}_{record.year}.pdf"
-        out_path = out_dir / filename
-
+    def _render_pdf_bytes(ctx: dict, html: str) -> bytes:
         try:
             from weasyprint import HTML
-            HTML(string=html).write_pdf(str(out_path))
+
+            buf = io.BytesIO()
+            HTML(string=html).write_pdf(buf)
+            return buf.getvalue()
         except Exception:
-            # Fallback when WeasyPrint unavailable (e.g. missing GTK on Windows dev)
             from reportlab.lib import colors
             from reportlab.lib.pagesizes import A4
             from reportlab.lib.styles import getSampleStyleSheet
             from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-            doc = SimpleDocTemplate(str(out_path), pagesize=A4)
+            buf = io.BytesIO()
+            doc = SimpleDocTemplate(buf, pagesize=A4)
             styles = getSampleStyleSheet()
             story = [
                 Paragraph(f"<b>Salary Slip — {ctx['month_name']} {ctx['year']}</b>", styles["Title"]),
@@ -91,5 +85,13 @@ class PDFGenerationService:
             ]))
             story.append(t)
             doc.build(story)
+            return buf.getvalue()
 
-        return str(out_path)
+    @staticmethod
+    def generate_pdf(record: PayrollRecord, job_id: int) -> str:
+        UploadService.ensure_dirs()
+        ctx = PDFGenerationService.build_context(record)
+        html = PDFGenerationService._env().get_template("payslip.html").render(**ctx)
+        filename = f"payslip_{record.employee_code}_{record.month}_{record.year}.pdf"
+        pdf_bytes = PDFGenerationService._render_pdf_bytes(ctx, html)
+        return StorageService.save_payslip_pdf(job_id, filename, pdf_bytes)

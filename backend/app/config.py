@@ -9,7 +9,7 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-jwt-secret")
 
     _default_pg = "postgresql://payslip:payslip_secret@localhost:5432/payslip_db"
-    if os.getenv("USE_SQLITE", "false").lower() == "true":
+    if os.getenv("USE_SQLITE", "true").lower() == "true":
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{BASE_DIR / 'dev.db'}"
     else:
         SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", _default_pg)
@@ -19,6 +19,8 @@ class Config:
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", str(BASE_DIR / "storage" / "uploads"))
     PAYSLIP_FOLDER = os.getenv("PAYSLIP_FOLDER", str(BASE_DIR / "storage" / "payslips"))
 
+    # Default: run PDF/email tasks inside Flask (no Redis, no separate Celery process).
+    CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "true").lower() == "true"
     CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
     CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
 
@@ -31,3 +33,8 @@ class Config:
 
     ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@company.com")
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+
+    SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+    SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
+    SUPABASE_UPLOAD_BUCKET = os.getenv("SUPABASE_UPLOAD_BUCKET", "uploads")
+    SUPABASE_PAYSLIP_BUCKET = os.getenv("SUPABASE_PAYSLIP_BUCKET", "payslips")

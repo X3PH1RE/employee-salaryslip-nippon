@@ -33,7 +33,9 @@ def create_app():
         AuthService.ensure_default_admin(Config.ADMIN_EMAIL, Config.ADMIN_PASSWORD)
 
         from app.services.upload_service import UploadService
+        from app.services.storage_service import StorageService
         UploadService.ensure_dirs()
+        StorageService.ensure_buckets()
 
     @app.route("/api/health")
     def health():

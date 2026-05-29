@@ -3,7 +3,6 @@ from datetime import datetime
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -11,8 +10,8 @@ from app.config import Config
 from app.extensions import db
 from app.models.email import EmailDelivery
 from app.models.payslip import PayslipDocument
-from app.services.audit_service import AuditService
 from app.services.pdf_service import PDFGenerationService, TEMPLATE_DIR
+from app.services.storage_service import StorageService
 
 
 class EmailService:
@@ -59,16 +58,12 @@ class EmailService:
         html_body = EmailService.render_body(employee_name, month, year)
         msg.attach(MIMEText(html_body, "html"))
 
-        pdf_path = Path(document.file_path)
-        if pdf_path.exists():
-            with open(pdf_path, "rb") as f:
-                part = MIMEApplication(f.read(), _subtype="pdf")
-                part.add_header(
-                    "Content-Disposition",
-                    "attachment",
-                    filename=pdf_path.name,
-                )
-                msg.attach(part)
+        if document.file_path and StorageService.exists(document.file_path):
+            pdf_bytes = StorageService.download_bytes(document.file_path)
+            filename = StorageService.filename_from_uri(document.file_path)
+            part = MIMEApplication(pdf_bytes, _subtype="pdf")
+            part.add_header("Content-Disposition", "attachment", filename=filename)
+            msg.attach(part)
 
         try:
             EmailService._smtp_send(msg, employee_email)

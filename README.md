@@ -1,6 +1,6 @@
 # Employee Salary Slip Automation System
 
-Automated pipeline for payroll administrators: upload employee master data and monthly payroll sheets, preview validated rows, generate salary slip PDFs asynchronously, and email them to employees via SMTP.
+Automated pipeline for payroll administrators: upload employee master data and monthly payroll sheets, preview validated rows, generate salary slip PDFs, and email them to employees via SMTP.
 
 ## Stack
 
@@ -8,143 +8,114 @@ Automated pipeline for payroll administrators: upload employee master data and m
 |-------|------------|
 | Frontend | React (Vite), TypeScript, Tailwind CSS, shadcn-style UI, TanStack Table |
 | Backend | Flask, Flask-CORS, SQLAlchemy, JWT |
-| Database | PostgreSQL |
-| Queue | Redis + Celery |
+| Database | SQLite (local) or Supabase PostgreSQL |
+| Background jobs | Celery (inline by default — no Redis required) |
 | PDF | Jinja2 + WeasyPrint (ReportLab fallback on Windows) |
 | Email | SMTP (Gmail / SendGrid compatible) |
+| Storage | Supabase Storage or local `storage/` folders |
 
 ## Architecture
 
-See [docs/architecture.md](docs/architecture.md) for the Mermaid diagram and request flows.
-
-Database DDL: [docs/schema.sql](docs/schema.sql)
+See [docs/architecture.md](docs/architecture.md) and [docs/schema.sql](docs/schema.sql).
 
 ## Prerequisites
 
 - Node.js 20+
 - Python 3.11+
-- Docker Desktop (for PostgreSQL + Redis)
-- (Optional) WeasyPrint system deps — [WeasyPrint install docs](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html). If unavailable, PDFs use ReportLab automatically.
+- (Optional) Supabase project for hosted DB + file storage
+- (Optional) WeasyPrint system deps — otherwise ReportLab is used on Windows
+
+**Not required:** Docker, Redis, or a separate Celery worker (for default setup).
 
 ## Quick start
 
-### 1. Infrastructure
+### 1. Backend
 
-```bash
-docker compose up -d
-```
-
-### 2. Backend
-
-```bash
+```powershell
 cd backend
 python -m venv .venv
-# Windows:
 .venv\Scripts\activate
-# macOS/Linux:
-# source .venv/bin/activate
-
 pip install -r requirements.txt
 copy .env.example .env
-# Edit .env — set SMTP_USER / SMTP_PASSWORD for email dispatch
+```
 
+Edit `.env`:
+
+- **SMTP** — `SMTP_USER` / `SMTP_PASSWORD` for sending payslip emails
+- **Supabase** (recommended) — `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`  
+  See [docs/supabase-storage.md](docs/supabase-storage.md)
+
+Default `.env` uses **SQLite** (`backend/dev.db`) and **inline Celery** (no Redis).
+
+```powershell
 python run.py
 ```
 
-In a **second terminal** (Celery worker):
+API: http://localhost:5000
 
-```bash
-cd backend
-.venv\Scripts\activate
-celery -A celery_worker.celery worker --loglevel=info --pool=solo
-```
+### 2. Frontend
 
-> Use `--pool=solo` on Windows.
-
-### 3. Frontend
-
-```bash
+```powershell
 cd frontend
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173
+App: http://localhost:5173 — login `admin@company.com` / `admin123`
 
-**Default admin:** `admin@company.com` / `admin123` (from `.env`)
+### 3. Test files
+
+- [samples/test_ashwin_employees.csv](samples/test_ashwin_employees.csv)
+- [samples/test_ashwin_payroll.csv](samples/test_ashwin_payroll.csv)
 
 ## Usage workflow
 
-1. **Employees** — Upload `samples/employees.csv` (or Excel). Preview → Import.
-2. **Payroll** — Upload `samples/payroll_may_2026.csv`. Preview validates employee IDs and net salary. Confirm batch.
-3. **Generate PDFs** — Click *Generate PDFs* on a batch. Celery writes files to `backend/storage/payslips/`.
-4. **Send emails** — After job completes, click *Send payslip emails* (requires SMTP in `.env`).
-5. **Activity** — View audit log for uploads, PDF generation, and email dispatch.
+1. **Employees** — upload CSV → preview → import  
+2. **Payroll** — upload CSV → preview → save batch  
+3. **Generate PDFs** — runs automatically in the API process  
+4. **Send payslip emails** — requires SMTP in `.env`  
+5. **Activity** — audit log  
 
-## API overview
+## Optional: async worker + Redis
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/login` | JWT login |
-| POST | `/api/employees/upload/preview` | Parse & validate employee file |
-| POST | `/api/employees/upload/commit` | Save employees |
-| POST | `/api/payroll/upload/preview` | Parse & validate payroll file |
-| POST | `/api/payroll/upload/commit` | Save payroll batch |
-| POST | `/api/payslips/generate` | Queue PDF job (202) |
-| POST | `/api/payslips/dispatch` | Queue email job (202) |
-| GET | `/api/payslips/jobs/:id` | Job + email delivery stats |
-| GET | `/api/audit` | Audit log |
+For heavy batches, set in `.env`:
 
-All routes except `/api/auth/*` and `/api/health` require `Authorization: Bearer <token>`.
-
-## Sample files
-
-- [samples/employees.csv](samples/employees.csv)
-- [samples/payroll_may_2026.csv](samples/payroll_may_2026.csv)
-
-## Screenshots
-
-After running the app, capture:
-
-1. Login screen
-2. Employee upload preview table
-3. Payroll preview with net salary column
-4. Job status + email dispatch panel
-5. Activity audit page
-
-Save under `docs/screenshots/` for your submission.
-
-## Project structure
-
+```env
+CELERY_TASK_ALWAYS_EAGER=false
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
 ```
-toyota-sw/
-├── backend/
-│   ├── app/
-│   │   ├── api/           # REST routes
-│   │   ├── models/        # SQLAlchemy models
-│   │   ├── services/      # Business logic
-│   │   ├── tasks/         # Celery tasks
-│   │   └── templates/     # Jinja2 HTML (PDF + email)
-│   ├── storage/
-│   │   ├── uploads/
-│   │   └── payslips/
-│   └── run.py
-├── frontend/              # React admin dashboard
-├── samples/
-├── docs/
-│   ├── architecture.md
-│   └── schema.sql
-└── docker-compose.yml
+
+Install and start [Redis for Windows](https://github.com/redis-windows/redis-windows/releases) (or Memurai), then:
+
+```powershell
+celery -A celery_worker.celery worker --loglevel=info --pool=solo
 ```
 
 ## Environment variables
 
 | Variable | Description |
 |----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `CELERY_BROKER_URL` | Redis URL |
+| `USE_SQLITE` | `true` = local `dev.db` (default); `false` = use `DATABASE_URL` |
+| `DATABASE_URL` | Supabase/Postgres connection string |
+| `CELERY_TASK_ALWAYS_EAGER` | `true` = no Redis/worker (default) |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` | Cloud file storage |
 | `SMTP_*` | Mail server credentials |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Bootstrap admin account |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Bootstrap admin |
+
+## API overview
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | JWT login |
+| POST | `/api/employees/upload/preview` | Validate employee file |
+| POST | `/api/employees/upload/commit` | Save employees |
+| POST | `/api/payroll/upload/preview` | Validate payroll file |
+| POST | `/api/payroll/upload/commit` | Save payroll batch |
+| POST | `/api/payslips/generate` | Start PDF job |
+| POST | `/api/payslips/dispatch` | Start email job |
+| GET | `/api/payslips/jobs/:id` | Job status |
+| GET | `/api/audit` | Audit log |
 
 ## Net salary formula
 
@@ -152,8 +123,6 @@ toyota-sw/
 Net Salary = Base Salary + HRA + Allowances − Deductions
 ```
 
-Validated on upload and reflected in PDFs.
-
 ## License
 
-MIT — for demonstration and internal HR automation projects.
+MIT
