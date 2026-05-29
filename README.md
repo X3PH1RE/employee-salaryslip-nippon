@@ -76,9 +76,13 @@ All settings are driven by environment variables. **Do not commit secrets.**
    pip install -r requirements.txt
    ```
 
-## Deploy on Vercel
+## Deploy backend on Vercel
 
-Root `pyproject.toml` sets `entrypoint = "backend.run:app"`. Add env vars from [backend/.env.example](backend/.env.example) in the Vercel dashboard (`USE_SQLITE=false`, Supabase, SMTP). If **Root Directory** is `backend/`, use `backend/pyproject.toml` (`entrypoint = "run:app"`) instead.
+1. In Vercel, set **Root Directory** to `backend`.
+2. Add env vars from [backend/.env.example](backend/.env.example) (`USE_SQLITE=false`, Supabase, SMTP, etc.).
+3. Deploy — `backend/pyproject.toml` sets `entrypoint = "run:app"`.
+
+Deploy the frontend separately (e.g. Vercel project with Root Directory `frontend`, or Netlify). Point the frontend API base URL at your deployed backend URL.
 
 ## Quick start
 
