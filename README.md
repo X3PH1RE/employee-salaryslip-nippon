@@ -79,7 +79,8 @@ All settings are driven by environment variables. **Do not commit secrets.**
 ## Deploy backend on Vercel
 
 1. **Root Directory** → `backend`
-2. **Install Command** (override): `pip install -r requirements.txt` — leave **Build Command** empty
+2. **Install Command** (override ON): `pip install -r requirements.txt` — leave **Build Command** empty  
+   (`backend/vercel.json` also sets this if dashboard overrides are off)
 3. **Required env vars:** `DATABASE_URL` (Supabase), `SECRET_KEY`, `JWT_SECRET_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, plus SMTP/admin vars from [backend/.env.example](backend/.env.example)
 4. Test: `https://your-api.vercel.app/api/health` → `{"status":"ok"}`
 
