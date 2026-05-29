@@ -37,7 +37,7 @@ class EmailService:
             employee_name=name,
             month_name=month_name,
             year=year,
-            company_name="Acme Corporation",
+            company_name="Nippon Toyota",
         )
 
     @staticmethod
@@ -88,4 +88,18 @@ class EmailService:
         sent = sum(1 for d in deliveries if d.status == "sent")
         failed = sum(1 for d in deliveries if d.status == "failed")
         pending = sum(1 for d in deliveries if d.status == "pending")
-        return {"sent": sent, "failed": failed, "pending": pending, "total": len(deliveries)}
+        failures = [
+            {
+                "email": d.employee_email,
+                "error": d.error_message,
+            }
+            for d in deliveries
+            if d.status == "failed" and d.error_message
+        ]
+        return {
+            "sent": sent,
+            "failed": failed,
+            "pending": pending,
+            "total": len(deliveries),
+            "failures": failures,
+        }

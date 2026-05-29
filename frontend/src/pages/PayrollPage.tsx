@@ -21,7 +21,13 @@ type Job = {
   failed: number
   total: number
 }
-type EmailStats = { sent: number; failed: number; pending: number; total: number }
+type EmailStats = {
+  sent: number
+  failed: number
+  pending: number
+  total: number
+  failures?: { email: string; error: string }[]
+}
 
 const MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
@@ -262,9 +268,20 @@ export function PayrollPage() {
                 {job.failed > 0 && ` · ${job.failed} failed`}
               </p>
               {emailStats && (
-                <p className="mt-1 text-sm text-[var(--color-muted)]">
-                  Email: {emailStats.sent} sent, {emailStats.failed} failed, {emailStats.pending} pending
-                </p>
+                <div className="mt-1 text-sm text-[var(--color-muted)]">
+                  <p>
+                    Email: {emailStats.sent} sent, {emailStats.failed} failed, {emailStats.pending} pending
+                  </p>
+                  {emailStats.failures && emailStats.failures.length > 0 && (
+                    <ul className="mt-2 space-y-1 rounded-md bg-red-50 p-3 text-xs text-red-900">
+                      {emailStats.failures.map((f, i) => (
+                        <li key={i}>
+                          <strong>{f.email}:</strong> {f.error}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               )}
               {["completed", "completed_with_errors"].includes(job.status) && (
                 <div className="mt-4 flex flex-wrap gap-2">
