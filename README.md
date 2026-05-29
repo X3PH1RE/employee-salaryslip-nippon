@@ -76,6 +76,10 @@ All settings are driven by environment variables. **Do not commit secrets.**
    pip install -r requirements.txt
    ```
 
+## Deploy on Vercel
+
+Root `pyproject.toml` sets `entrypoint = "backend.run:app"`. Add env vars from [backend/.env.example](backend/.env.example) in the Vercel dashboard (`USE_SQLITE=false`, Supabase, SMTP). If **Root Directory** is `backend/`, use `backend/pyproject.toml` (`entrypoint = "run:app"`) instead.
+
 ## Quick start
 
 ### Backend

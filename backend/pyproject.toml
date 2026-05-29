@@ -1,0 +1,3 @@
+# Use this file if Vercel "Root Directory" is set to backend/
+[tool.vercel]
+entrypoint = "run:app"

@@ -1,0 +1,7 @@
+[project]
+name = "employee-salaryslip-nippon"
+version = "1.0.0"
+requires-python = ">=3.11"
+
+[tool.vercel]
+entrypoint = "backend.run:app"
