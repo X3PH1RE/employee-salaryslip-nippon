@@ -78,11 +78,14 @@ All settings are driven by environment variables. **Do not commit secrets.**
 
 ## Deploy backend on Vercel
 
-1. In Vercel, set **Root Directory** to `backend`.
-2. Add env vars from [backend/.env.example](backend/.env.example) (`USE_SQLITE=false`, Supabase, SMTP, etc.).
-3. Deploy — `backend/pyproject.toml` sets `entrypoint = "run:app"`.
+1. **Root Directory** → `backend`
+2. **Install Command** (override): `pip install -r requirements.txt` — leave **Build Command** empty
+3. **Required env vars:** `DATABASE_URL` (Supabase), `SECRET_KEY`, `JWT_SECRET_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, plus SMTP/admin vars from [backend/.env.example](backend/.env.example)
+4. Test: `https://your-api.vercel.app/api/health` → `{"status":"ok"}`
 
-Deploy the frontend separately (e.g. Vercel project with Root Directory `frontend`, or Netlify). Point the frontend API base URL at your deployed backend URL.
+SQLite is auto-disabled on Vercel. If you get **500 FUNCTION_INVOCATION_FAILED**, open **Deployments → Logs** — usually missing/wrong `DATABASE_URL`.
+
+**Frontend (separate project):** Root Directory `frontend`, set `VITE_API_URL=https://your-api.vercel.app/api` (see [frontend/.env.example](frontend/.env.example)).
 
 ## Quick start
 

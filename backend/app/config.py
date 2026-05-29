@@ -4,15 +4,28 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _normalize_db_url(url: str) -> str:
+    # Supabase/Heroku often provide postgres:// — SQLAlchemy needs postgresql://
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql://", 1)
+    return url
+
+
+def _should_use_sqlite() -> bool:
+    if os.getenv("VERCEL") or os.getenv("VERCEL_ENV"):
+        return False
+    return os.getenv("USE_SQLITE", "true").lower() == "true"
+
+
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-jwt-secret")
 
     _default_pg = "postgresql://payslip:payslip_secret@localhost:5432/payslip_db"
-    if os.getenv("USE_SQLITE", "true").lower() == "true":
+    if _should_use_sqlite():
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{BASE_DIR / 'dev.db'}"
     else:
-        SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", _default_pg)
+        SQLALCHEMY_DATABASE_URI = _normalize_db_url(os.getenv("DATABASE_URL", _default_pg))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_ACCESS_TOKEN_EXPIRES = 60 * 60 * 8  # 8 hours
 

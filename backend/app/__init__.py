@@ -11,6 +11,23 @@ from app.config import Config
 from app.extensions import db, jwt
 
 
+def _init_database(app: Flask):
+    from app.models import (  # noqa: F401
+        Admin, AuditLog, EmailDelivery, Employee,
+        PayrollBatch, PayrollRecord, PayslipDocument, PayslipJob,
+    )
+    db.create_all()
+    from app.services.auth_service import AuthService
+    AuthService.ensure_default_admin(Config.ADMIN_EMAIL, Config.ADMIN_PASSWORD)
+
+
+def _init_storage(app: Flask):
+    from app.services.storage_service import StorageService
+    from app.services.upload_service import UploadService
+    UploadService.ensure_dirs()
+    StorageService.ensure_buckets()
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -24,18 +41,20 @@ def create_app():
     app.register_blueprint(api_bp, url_prefix="/api")
 
     with app.app_context():
-        from app.models import (  # noqa: F401
-            Admin, AuditLog, EmailDelivery, Employee,
-            PayrollBatch, PayrollRecord, PayslipDocument, PayslipJob,
-        )
-        db.create_all()
-        from app.services.auth_service import AuthService
-        AuthService.ensure_default_admin(Config.ADMIN_EMAIL, Config.ADMIN_PASSWORD)
+        try:
+            _init_database(app)
+        except Exception as exc:
+            app.logger.error("Database init failed: %s", exc)
+            if os.getenv("VERCEL") or os.getenv("VERCEL_ENV"):
+                raise
+        try:
+            _init_storage(app)
+        except Exception as exc:
+            app.logger.warning("Storage init skipped: %s", exc)
 
-        from app.services.upload_service import UploadService
-        from app.services.storage_service import StorageService
-        UploadService.ensure_dirs()
-        StorageService.ensure_buckets()
+    @app.route("/")
+    def index():
+        return {"service": "payslip-api", "health": "/api/health"}
 
     @app.route("/api/health")
     def health():
