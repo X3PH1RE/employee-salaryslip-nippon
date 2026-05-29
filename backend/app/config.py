@@ -34,6 +34,8 @@ class Config:
     ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@company.com")
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
+    COMPANY_NAME = os.getenv("COMPANY_NAME", "Nippon Toyota")
+
     SUPABASE_URL = os.getenv("SUPABASE_URL", "")
     SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
     SUPABASE_UPLOAD_BUCKET = os.getenv("SUPABASE_UPLOAD_BUCKET", "uploads")

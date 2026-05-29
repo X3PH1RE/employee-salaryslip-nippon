@@ -4,6 +4,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from app.config import Config
 from app.models.payroll import PayrollRecord
 from app.services.storage_service import StorageService
 from app.services.upload_service import UploadService
@@ -28,7 +29,7 @@ class PDFGenerationService:
     def build_context(record: PayrollRecord) -> dict:
         emp = record.employee
         return {
-            "company_name": "Acme Corporation",
+            "company_name": Config.COMPANY_NAME,
             "employee_id": emp.employee_id,
             "name": emp.name,
             "email": emp.email,

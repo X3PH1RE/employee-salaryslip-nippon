@@ -62,6 +62,7 @@ All settings are driven by environment variables. **Do not commit secrets.**
    |------|----------------|-------|
    | App / auth | `SECRET_KEY`, `JWT_SECRET_KEY`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Default admin is created on first run |
    | Database | `USE_SQLITE`, `DATABASE_URL` | `USE_SQLITE=true` uses `backend/dev.db`; set `false` + Supabase URI for hosted Postgres |
+   | Branding | `COMPANY_NAME` | PDFs and emails (default: `Nippon Toyota`); regenerate PDFs after changes |
    | Background jobs | `CELERY_TASK_ALWAYS_EAGER` | `true` (default) runs PDF/email in Flask — no worker process |
    | Supabase files | `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_*_BUCKET` | Service role key from **Project Settings → API** |
    | SMTP | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Gmail: use a 16-char [App Password](https://myaccount.google.com/apppasswords), not your login password |

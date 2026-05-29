@@ -37,7 +37,7 @@ class EmailService:
             employee_name=name,
             month_name=month_name,
             year=year,
-            company_name="Nippon Toyota",
+            company_name=Config.COMPANY_NAME,
         )
 
     @staticmethod
