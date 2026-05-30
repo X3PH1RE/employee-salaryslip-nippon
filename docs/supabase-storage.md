@@ -16,7 +16,14 @@ In Supabase Dashboard → **Project Settings → API**:
 - **Project URL** → `SUPABASE_URL`
 - **service_role** key (secret) → `SUPABASE_SERVICE_KEY` — **not** the `anon` / public key
 
-If PDF generation fails with **Invalid API key**, fix `SUPABASE_SERVICE_KEY` in `.env` (local) or Vercel env vars, restart/redeploy, then click **Generate PDFs** again.
+Supabase now offers two secret key formats:
+
+| Format | Example | Notes |
+|--------|---------|--------|
+| New secret | `sb_secret_...` | Requires `supabase>=2.28` on the server (see `requirements.txt`) |
+| Legacy JWT | `eyJhbG...` (service_role) | Works with older `supabase-py` too |
+
+If PDF generation fails with **Invalid API key**, fix `SUPABASE_SERVICE_KEY` in `.env` (local) or Vercel env vars, **redeploy** the backend, then click **Generate PDFs** again. On Vercel, remove accidental quotes or spaces around the key value.
 
 ## 2. Buckets
 

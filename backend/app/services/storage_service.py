@@ -36,7 +36,9 @@ class StorageService:
             if "Invalid API key" in msg or "invalid" in msg.lower():
                 return (
                     "Supabase rejected SUPABASE_SERVICE_KEY (Invalid API key). "
-                    "Use the service_role secret from Project Settings → API, not the anon key."
+                    "Use the service_role secret from Project Settings → API, not the anon key. "
+                    "If the key starts with sb_secret_, upgrade supabase Python package to >=2.28 "
+                    "(Vercel must redeploy after updating requirements.txt)."
                 )
             return f"Supabase storage unavailable: {msg}"
 

@@ -53,7 +53,7 @@ class Config:
 
     COMPANY_NAME = os.getenv("COMPANY_NAME", "Nippon Toyota")
 
-    SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-    SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
+    SUPABASE_URL = (os.getenv("SUPABASE_URL") or "").strip()
+    SUPABASE_SERVICE_KEY = (os.getenv("SUPABASE_SERVICE_KEY") or "").strip()
     SUPABASE_UPLOAD_BUCKET = os.getenv("SUPABASE_UPLOAD_BUCKET", "uploads")
     SUPABASE_PAYSLIP_BUCKET = os.getenv("SUPABASE_PAYSLIP_BUCKET", "payslips")
