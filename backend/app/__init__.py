@@ -7,11 +7,13 @@ try:
 except ImportError:
     pass
 
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from app.config import Config
 from app.extensions import db, jwt
+
+_initialized = False
 
 
 def _init_database(app: Flask):
@@ -28,7 +30,24 @@ def _init_storage(app: Flask):
     from app.services.storage_service import StorageService
     from app.services.upload_service import UploadService
     UploadService.ensure_dirs()
-    StorageService.ensure_buckets()
+
+
+def _ensure_initialized(app: Flask):
+    global _initialized
+    if _initialized:
+        return None
+    with app.app_context():
+        try:
+            _init_database(app)
+        except Exception as exc:
+            app.logger.error("Database init failed: %s", exc)
+            return jsonify({"error": "Database unavailable", "detail": str(exc)}), 503
+        try:
+            _init_storage(app)
+        except Exception as exc:
+            app.logger.warning("Storage init skipped: %s", exc)
+    _initialized = True
+    return None
 
 
 def create_app():
@@ -43,15 +62,27 @@ def create_app():
     from app.api import api_bp
     app.register_blueprint(api_bp, url_prefix="/api")
 
-    with app.app_context():
-        try:
-            _init_database(app)
-        except Exception as exc:
-            app.logger.error("Database init failed: %s", exc)
-        try:
-            _init_storage(app)
-        except Exception as exc:
-            app.logger.warning("Storage init skipped: %s", exc)
+    # Local dev: init on startup. Render: lazy init so Gunicorn binds before DB/Supabase.
+    if not os.getenv("RENDER"):
+        with app.app_context():
+            try:
+                _init_database(app)
+                global _initialized
+                _initialized = True
+            except Exception as exc:
+                app.logger.error("Database init failed: %s", exc)
+            try:
+                _init_storage(app)
+            except Exception as exc:
+                app.logger.warning("Storage init skipped: %s", exc)
+    else:
+        @app.before_request
+        def _lazy_init():
+            if request.path in ("/", "/api/health"):
+                return None
+            if not request.path.startswith("/api/"):
+                return None
+            return _ensure_initialized(app)
 
     @app.route("/")
     def index():
@@ -71,9 +102,9 @@ def create_app():
             )
             storage["url_host"] = Config.SUPABASE_URL.replace("https://", "").split("/")[0]
             try:
-                storage["supabase_py"] = importlib.metadata.version("supabase")
+                storage["storage3_py"] = importlib.metadata.version("storage3")
             except Exception:
-                storage["supabase_py"] = "unknown"
+                storage["storage3_py"] = "unknown"
             from app.services.storage_service import StorageService
             err = StorageService.verify_credentials()
             storage["ok"] = err is None

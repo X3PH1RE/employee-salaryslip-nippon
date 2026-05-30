@@ -1,4 +1,10 @@
+import importlib.util
+
 from app.config import Config
+
+
+def _celery_installed() -> bool:
+    return importlib.util.find_spec("celery") is not None
 
 
 class _EagerTaskResult:
@@ -34,7 +40,7 @@ class _EagerCelery:
         return decorator
 
 
-if Config.CELERY_TASK_ALWAYS_EAGER:
+if Config.CELERY_TASK_ALWAYS_EAGER or not _celery_installed():
     celery = _EagerCelery()
 else:
     from celery import Celery
