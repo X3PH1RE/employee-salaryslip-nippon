@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import api, { type EmployeePreviewRow, type PreviewResult } from "@/lib/api"
 import { DataTable } from "@/components/DataTable"
 import { FileUploadZone } from "@/components/FileUploadZone"
@@ -7,25 +8,17 @@ import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, cardHeaderRow } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { fetchEmployees, invalidateAfterEmployeeChange, queryKeys } from "@/lib/queries"
 
 export function EmployeesPage() {
-  const [list, setList] = useState<EmployeePreviewRow[]>([])
+  const queryClient = useQueryClient()
+  const { data: list = [], isPending } = useQuery({
+    queryKey: queryKeys.employees,
+    queryFn: fetchEmployees,
+  })
   const [preview, setPreview] = useState<PreviewResult<EmployeePreviewRow> | null>(null)
   const [loading, setLoading] = useState(false)
-  const [listLoading, setListLoading] = useState(true)
   const [message, setMessage] = useState("")
-
-  const load = useCallback(() => {
-    setListLoading(true)
-    api
-      .get("/employees")
-      .then((r) => setList(r.data))
-      .finally(() => setListLoading(false))
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
 
   const columns = useMemo<ColumnDef<EmployeePreviewRow>[]>(
     () => [
@@ -63,7 +56,7 @@ export function EmployeesPage() {
       const { data } = await api.post("/employees/upload/commit", { rows: preview.preview })
       setMessage(`Saved: ${data.created} created, ${data.updated} updated`)
       setPreview(null)
-      load()
+      invalidateAfterEmployeeChange(queryClient)
     } catch {
       setMessage("Commit failed")
     } finally {
@@ -133,7 +126,7 @@ export function EmployeesPage() {
           <CardDescription>{list.length} employees</CardDescription>
         </CardHeader>
         <CardContent>
-          {listLoading ? (
+          {isPending ? (
             <p className="text-sm text-[var(--color-muted)]">Loading employees…</p>
           ) : (
             <DataTable columns={columns} data={list} />

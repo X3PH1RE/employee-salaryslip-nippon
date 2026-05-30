@@ -1,42 +1,28 @@
-import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import api from "@/lib/api"
+import { useQuery } from "@tanstack/react-query"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, cardHeaderRow } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-
-type Batch = { id: number; month: number; year: number; record_count: number; status: string }
-type Job = { id: number; batch_id: number; status: string; completed: number; total: number }
+import { fetchDashboardSummary, queryKeys } from "@/lib/queries"
 
 const MONTHS = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 export function DashboardPage() {
-  const [employees, setEmployees] = useState(0)
-  const [batchTotal, setBatchTotal] = useState(0)
-  const [batches, setBatches] = useState<Batch[]>([])
-  const [jobs, setJobs] = useState<Job[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, isPending } = useQuery({
+    queryKey: queryKeys.dashboardSummary,
+    queryFn: fetchDashboardSummary,
+  })
 
-  useEffect(() => {
-    api
-      .get("/dashboard/summary")
-      .then(({ data }) => {
-        setEmployees(data.employee_count)
-        setBatchTotal(data.batch_total)
-        setBatches(data.batches)
-        setJobs(data.jobs)
-      })
-      .finally(() => setLoading(false))
-  }, [])
-
-  if (loading) {
+  if (isPending || !data) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center text-sm text-[var(--color-muted)]">
         Loading overview…
       </div>
     )
   }
+
+  const { employee_count, batch_total, batches, jobs } = data
 
   return (
     <div>
@@ -47,8 +33,8 @@ export function DashboardPage() {
 
       <div className="mb-8 grid gap-3 sm:mb-10 sm:grid-cols-3 sm:gap-4">
         {[
-          { label: "Employees on file", value: employees },
-          { label: "Payroll batches", value: batchTotal },
+          { label: "Employees on file", value: employee_count },
+          { label: "Payroll batches", value: batch_total },
           { label: "Recent jobs", value: jobs.length },
         ].map((s) => (
           <Card key={s.label}>

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import api, {
   downloadPayslipPdf,
   downloadPayslipZip,
@@ -13,7 +14,12 @@ import { FileUploadZone } from "@/components/FileUploadZone"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, cardHeaderRow } from "@/components/ui/card"
-type Batch = { id: number; month: number; year: number; record_count: number; status: string }
+import {
+  fetchPayrollBatches,
+  invalidateAfterPayrollChange,
+  invalidateAfterPayslipJob,
+  queryKeys,
+} from "@/lib/queries"
 type Job = {
   id: number
   batch_id: number
@@ -33,7 +39,11 @@ type EmailStats = {
 const MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
 export function PayrollPage() {
-  const [batches, setBatches] = useState<Batch[]>([])
+  const queryClient = useQueryClient()
+  const { data: batches = [], isPending: batchesLoading } = useQuery({
+    queryKey: queryKeys.payrollBatches,
+    queryFn: fetchPayrollBatches,
+  })
   const [preview, setPreview] = useState<PreviewResult<PayrollPreviewRow> | null>(null)
   const [filename, setFilename] = useState("")
   const [loading, setLoading] = useState(false)
@@ -42,20 +52,6 @@ export function PayrollPage() {
   const [emailStats, setEmailStats] = useState<EmailStats | null>(null)
   const [documents, setDocuments] = useState<PayslipDocumentRow[]>([])
   const [downloadingId, setDownloadingId] = useState<number | null>(null)
-
-  const [batchesLoading, setBatchesLoading] = useState(true)
-
-  const loadBatches = useCallback(() => {
-    setBatchesLoading(true)
-    api
-      .get("/payroll/batches")
-      .then((r) => setBatches(r.data))
-      .finally(() => setBatchesLoading(false))
-  }, [])
-
-  useEffect(() => {
-    loadBatches()
-  }, [loadBatches])
 
   const columns = useMemo<ColumnDef<PayrollPreviewRow>[]>(
     () => [
@@ -104,7 +100,7 @@ export function PayrollPage() {
       const { data } = await api.post("/payroll/upload/commit", { rows, filename })
       setMessage(`Batch #${data.batch.id} saved`)
       setPreview(null)
-      loadBatches()
+      invalidateAfterPayrollChange(queryClient)
     } catch {
       setMessage("Commit failed")
     } finally {
@@ -140,6 +136,7 @@ export function PayrollPage() {
         clearInterval(interval)
         setLoading(false)
         setMessage(`PDFs ready: ${data.job.completed} generated, ${data.job.failed} failed`)
+        invalidateAfterPayslipJob(queryClient)
       }
     }, 2000)
   }

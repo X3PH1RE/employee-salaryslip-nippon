@@ -2,10 +2,16 @@ import { useEffect, useState } from "react"
 import { Outlet, useLocation } from "react-router-dom"
 import { Menu } from "lucide-react"
 import { Sidebar } from "./Sidebar"
+import { prefetchAppData } from "@/lib/queries"
+import { queryClient } from "@/lib/queryClient"
 
 export function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
+
+  useEffect(() => {
+    void prefetchAppData(queryClient)
+  }, [])
 
   useEffect(() => {
     setMobileOpen(false)
