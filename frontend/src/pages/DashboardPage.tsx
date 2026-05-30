@@ -13,20 +13,30 @@ const MONTHS = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep
 
 export function DashboardPage() {
   const [employees, setEmployees] = useState(0)
+  const [batchTotal, setBatchTotal] = useState(0)
   const [batches, setBatches] = useState<Batch[]>([])
   const [jobs, setJobs] = useState<Job[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([
-      api.get("/employees"),
-      api.get("/payroll/batches"),
-      api.get("/payslips/jobs"),
-    ]).then(([emp, bat, j]) => {
-      setEmployees(emp.data.length)
-      setBatches(bat.data.slice(0, 5))
-      setJobs(j.data.slice(0, 5))
-    })
+    api
+      .get("/dashboard/summary")
+      .then(({ data }) => {
+        setEmployees(data.employee_count)
+        setBatchTotal(data.batch_total)
+        setBatches(data.batches)
+        setJobs(data.jobs)
+      })
+      .finally(() => setLoading(false))
   }, [])
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center text-sm text-[var(--color-muted)]">
+        Loading overview…
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -38,7 +48,7 @@ export function DashboardPage() {
       <div className="mb-8 grid gap-3 sm:mb-10 sm:grid-cols-3 sm:gap-4">
         {[
           { label: "Employees on file", value: employees },
-          { label: "Payroll batches", value: batches.length },
+          { label: "Payroll batches", value: batchTotal },
           { label: "Recent jobs", value: jobs.length },
         ].map((s) => (
           <Card key={s.label}>

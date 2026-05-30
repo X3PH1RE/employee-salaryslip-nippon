@@ -97,6 +97,8 @@ All settings are driven by environment variables. **Do not commit secrets.**
 
 **If login shows CORS + 404:** the backend is not serving Flask yet (Vercel returns 404 with no CORS headers). Push `backend/main.py`, redeploy the **backend** project, then confirm `/api/health` in the browser before testing the frontend.
 
+**Slow API responses:** Vercel serverless has a **cold start** (2–5s) after idle time. The backend skips Supabase bucket checks on startup and uses a single `/api/dashboard/summary` call for the overview. First request after idle will still be slower than a always-on server.
+
 **Common error:** `Cannot assign requested address` on `db.*.supabase.co:5432` → switch `DATABASE_URL` to the **pooler** URL (port **6543**). Bundle > 245 MB → ensure install uses `requirements-vercel.txt`.
 
 **Frontend (separate project):** Root Directory `frontend`, set `VITE_API_URL` to your **backend** URL (e.g. `https://employee-salaryslip-nippon-2p1u.vercel.app` — `/api` is added automatically). Redeploy frontend after changing env vars.
@@ -182,6 +184,7 @@ celery -A celery_worker.celery worker --loglevel=info --pool=solo
 |--------|----------|-------------|
 | POST | `/api/auth/login` | JWT login |
 | POST | `/api/auth/setup` | Bootstrap admin from env |
+| GET | `/api/dashboard/summary` | Overview counts + recent batches/jobs |
 | GET | `/api/employees` | List employees |
 | POST | `/api/employees/upload/preview` | Validate employee file |
 | POST | `/api/employees/upload/commit` | Save employees |

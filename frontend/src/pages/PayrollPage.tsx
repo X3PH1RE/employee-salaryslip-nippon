@@ -43,8 +43,14 @@ export function PayrollPage() {
   const [documents, setDocuments] = useState<PayslipDocumentRow[]>([])
   const [downloadingId, setDownloadingId] = useState<number | null>(null)
 
+  const [batchesLoading, setBatchesLoading] = useState(true)
+
   const loadBatches = useCallback(() => {
-    api.get("/payroll/batches").then((r) => setBatches(r.data))
+    setBatchesLoading(true)
+    api
+      .get("/payroll/batches")
+      .then((r) => setBatches(r.data))
+      .finally(() => setBatchesLoading(false))
   }, [])
 
   useEffect(() => {
@@ -238,6 +244,9 @@ export function PayrollPage() {
           <CardDescription>Generate PDFs and send emails asynchronously</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {batchesLoading ? (
+            <p className="text-sm text-[var(--color-muted)]">Loading batches…</p>
+          ) : (
           <ul className="divide-y divide-[var(--color-border)]">
             {batches.map((b) => (
               <li
@@ -264,6 +273,7 @@ export function PayrollPage() {
               </li>
             ))}
           </ul>
+          )}
 
           {job && (
             <div className="mt-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-canvas)] p-4">

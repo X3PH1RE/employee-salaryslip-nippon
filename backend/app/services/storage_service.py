@@ -49,6 +49,9 @@ class StorageService:
     def ensure_buckets():
         if not StorageService.enabled():
             return
+        # Buckets are created once in Supabase; skip network calls on serverless cold start.
+        if os.getenv("VERCEL") or os.getenv("VERCEL_ENV"):
+            return
         err = StorageService.verify_credentials()
         if err:
             raise RuntimeError(err)

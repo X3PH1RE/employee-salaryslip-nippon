@@ -12,10 +12,15 @@ export function EmployeesPage() {
   const [list, setList] = useState<EmployeePreviewRow[]>([])
   const [preview, setPreview] = useState<PreviewResult<EmployeePreviewRow> | null>(null)
   const [loading, setLoading] = useState(false)
+  const [listLoading, setListLoading] = useState(true)
   const [message, setMessage] = useState("")
 
   const load = useCallback(() => {
-    api.get("/employees").then((r) => setList(r.data))
+    setListLoading(true)
+    api
+      .get("/employees")
+      .then((r) => setList(r.data))
+      .finally(() => setListLoading(false))
   }, [])
 
   useEffect(() => {
@@ -128,7 +133,11 @@ export function EmployeesPage() {
           <CardDescription>{list.length} employees</CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable columns={columns} data={list} />
+          {listLoading ? (
+            <p className="text-sm text-[var(--color-muted)]">Loading employees…</p>
+          ) : (
+            <DataTable columns={columns} data={list} />
+          )}
         </CardContent>
       </Card>
     </div>

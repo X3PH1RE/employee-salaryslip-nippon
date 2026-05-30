@@ -27,10 +27,20 @@ class Config:
     else:
         SQLALCHEMY_DATABASE_URI = _normalize_db_url(os.getenv("DATABASE_URL", _default_pg))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_pre_ping": True,
-        "pool_recycle": 300,
-    }
+    # Serverless: avoid holding Postgres connections between invocations (use Supabase pooler :6543)
+    if os.getenv("VERCEL") or os.getenv("VERCEL_ENV"):
+        from sqlalchemy.pool import NullPool
+
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "poolclass": NullPool,
+            "pool_pre_ping": True,
+            "connect_args": {"connect_timeout": 10},
+        }
+    else:
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_pre_ping": True,
+            "pool_recycle": 300,
+        }
     JWT_ACCESS_TOKEN_EXPIRES = 60 * 60 * 8  # 8 hours
 
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", str(BASE_DIR / "storage" / "uploads"))

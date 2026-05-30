@@ -12,12 +12,11 @@ export function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  const submit = async (e: React.FormEvent) => {
+    const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
     try {
-      await api.post("/auth/setup")
       const { data } = await api.post("/auth/login", { email, password })
       localStorage.setItem("token", data.access_token)
       navigate("/")
