@@ -32,7 +32,7 @@ export function LoginPage() {
       <div className="w-full max-w-md">
         <div className="mb-10 text-center">
           <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-[var(--color-muted)]">
-            Internal use
+            Assignment task for Nippon Toyota
           </p>
           <h1 className="font-display mt-2 text-3xl text-[var(--color-ink)] sm:text-4xl">Slip Desk</h1>
           <p className="mt-2 text-sm text-[var(--color-muted)]">
