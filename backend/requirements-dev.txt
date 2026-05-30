@@ -1,0 +1,6 @@
+# Optional local dev extras (install after requirements.txt)
+-r requirements.txt
+pandas==2.2.2
+weasyprint==62.3
+celery==5.4.0
+redis==5.0.8

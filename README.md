@@ -68,18 +68,20 @@ All settings are driven by environment variables. **Do not commit secrets.**
    | SMTP | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Gmail: use a 16-char [App Password](https://myaccount.google.com/apppasswords), not your login password |
    | Local files | `UPLOAD_FOLDER`, `PAYSLIP_FOLDER` | Used when Supabase storage keys are empty |
 
-3. Install Python dependencies (includes `supabase` for storage):
+3. Install Python dependencies:
 
    ```powershell
    python -m venv .venv
    .venv\Scripts\activate
    pip install -r requirements.txt
+   # Optional local extras (WeasyPrint, pandas, Celery):
+   pip install -r requirements-dev.txt
    ```
 
 ## Deploy backend on Vercel
 
 1. **Root Directory** → `backend`
-2. **Install Command** (override ON): `pip install -r requirements.txt` — leave **Build Command** empty  
+2. **Install Command** (override ON): `pip install --upgrade pip && pip install --prefer-binary -r requirements-vercel.txt` — leave **Build Command** empty  
    (`backend/vercel.json` also sets this if dashboard overrides are off)
 3. **Required env vars:** `DATABASE_URL` (Supabase **Session pooler**, port **6543** — not `db.*:5432`), `SECRET_KEY`, `JWT_SECRET_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, plus SMTP/admin vars from [backend/.env.example](backend/.env.example)
 
@@ -91,7 +93,7 @@ All settings are driven by environment variables. **Do not commit secrets.**
 
 6. Setup admin: `POST https://your-api.vercel.app/api/auth/setup` (note the `/api` prefix)
 
-**Common error:** `Cannot assign requested address` on `db.*.supabase.co:5432` → switch `DATABASE_URL` to the **pooler** URL (port **6543**).
+**Common error:** `Cannot assign requested address` on `db.*.supabase.co:5432` → switch `DATABASE_URL` to the **pooler** URL (port **6543**). Bundle > 245 MB → ensure install uses `requirements-vercel.txt`.
 
 **Frontend (separate project):** Root Directory `frontend`, set `VITE_API_URL=https://your-api.vercel.app/api` (see [frontend/.env.example](frontend/.env.example)).
 
@@ -204,7 +206,10 @@ employee-salaryslip-nippon/
 │   │   ├── tasks/
 │   │   └── templates/
 │   ├── storage/              # local fallback (uploads, payslips)
+│   ├── requirements-vercel.txt  # Slim deps for Vercel (<245 MB)
 │   ├── requirements.txt
+│   ├── requirements-dev.txt
+│   ├── vercel.json
 │   └── run.py
 ├── frontend/                 # React admin UI (Slip Desk)
 ├── samples/                  # CSV templates

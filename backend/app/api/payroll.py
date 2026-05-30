@@ -4,7 +4,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from app.api import api_bp
 from app.services.payroll_service import PayrollService
 from app.services.upload_service import UploadService
-from app.utils.file_parser import dataframe_to_records, read_tabular_file
+from app.utils.file_parser import read_tabular_file
 
 
 @api_bp.route("/payroll/batches", methods=["GET"])
@@ -32,8 +32,7 @@ def preview_payroll_upload():
     file = request.files["file"]
     try:
         path = UploadService.save_upload(file, prefix="payroll")
-        df = read_tabular_file(path)
-        rows = dataframe_to_records(df)
+        rows = read_tabular_file(path)
         result = PayrollService.validate_upload_rows(rows)
         result["file_path"] = path
         result["filename"] = file.filename

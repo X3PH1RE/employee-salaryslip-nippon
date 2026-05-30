@@ -97,6 +97,26 @@ def create_app():
 
     @app.route("/api/health")
     def health():
-        return {"status": "ok"}
+        import importlib.metadata
+
+        storage = {"enabled": bool(Config.SUPABASE_URL and Config.SUPABASE_SERVICE_KEY)}
+        if storage["enabled"]:
+            key = Config.SUPABASE_SERVICE_KEY
+            storage["key_format"] = (
+                "sb_secret" if key.startswith("sb_secret_")
+                else "jwt" if key.startswith("eyJ")
+                else "other"
+            )
+            storage["url_host"] = Config.SUPABASE_URL.replace("https://", "").split("/")[0]
+            try:
+                storage["storage3_py"] = importlib.metadata.version("storage3")
+            except Exception:
+                storage["storage3_py"] = "unknown"
+            from app.services.storage_service import StorageService
+            err = StorageService.verify_credentials()
+            storage["ok"] = err is None
+            if err:
+                storage["error"] = err
+        return {"status": "ok", "storage": storage}
 
     return app
