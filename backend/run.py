@@ -4,7 +4,7 @@ try:
     from dotenv import load_dotenv
     load_dotenv(Path(__file__).resolve().parent / ".env")
 except ImportError:
-    pass  # Vercel injects env vars; dotenv is local dev only
+    pass  # Render/local: dotenv loads .env; production injects env vars
 
 from app import create_app
 

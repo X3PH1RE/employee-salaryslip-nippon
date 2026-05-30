@@ -44,7 +44,7 @@ def read_upload_file(file_storage) -> pd.DataFrame:
     file_storage.stream.seek(0)
     return read_tabular_bytes(data, suffix)
 
-
 def dataframe_to_records(df: pd.DataFrame) -> list[dict]:
     df = df.where(pd.notnull(df), None)
     return df.to_dict(orient="records")
+

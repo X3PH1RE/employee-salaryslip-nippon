@@ -37,8 +37,7 @@ class StorageService:
                 return (
                     "Supabase rejected SUPABASE_SERVICE_KEY (Invalid API key). "
                     "Use the service_role secret from Project Settings → API, not the anon key. "
-                    "If the key starts with sb_secret_, upgrade supabase Python package to >=2.28 "
-                    "(Vercel must redeploy after updating requirements.txt)."
+                    "If the key starts with sb_secret_, use supabase>=2.28 in requirements.txt."
                 )
             return f"Supabase storage unavailable: {msg}"
 

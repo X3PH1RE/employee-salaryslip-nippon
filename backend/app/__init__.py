@@ -7,13 +7,11 @@ try:
 except ImportError:
     pass
 
-from flask import Flask, request
+from flask import Flask
 from flask_cors import CORS
 
 from app.config import Config
 from app.extensions import db, jwt
-
-_db_initialized = False
 
 
 def _init_database(app: Flask):
@@ -21,10 +19,7 @@ def _init_database(app: Flask):
         Admin, AuditLog, EmailDelivery, Employee,
         PayrollBatch, PayrollRecord, PayslipDocument, PayslipJob,
     )
-    # On Vercel, run schema via Supabase SQL editor — skip DDL on cold start
-    on_vercel = bool(os.getenv("VERCEL") or os.getenv("VERCEL_ENV"))
-    if not on_vercel:
-        db.create_all()
+    db.create_all()
     from app.services.auth_service import AuthService
     AuthService.ensure_default_admin(Config.ADMIN_EMAIL, Config.ADMIN_PASSWORD)
 
@@ -34,14 +29,6 @@ def _init_storage(app: Flask):
     from app.services.upload_service import UploadService
     UploadService.ensure_dirs()
     StorageService.ensure_buckets()
-
-
-def _ensure_db(app: Flask):
-    global _db_initialized
-    if _db_initialized:
-        return
-    _init_database(app)
-    _db_initialized = True
 
 
 def create_app():
@@ -56,40 +43,15 @@ def create_app():
     from app.api import api_bp
     app.register_blueprint(api_bp, url_prefix="/api")
 
-    on_vercel = bool(os.getenv("VERCEL") or os.getenv("VERCEL_ENV"))
-
-    if not on_vercel:
-        with app.app_context():
-            try:
-                _init_database(app)
-                global _db_initialized
-                _db_initialized = True
-            except Exception as exc:
-                app.logger.error("Database init failed: %s", exc)
-            try:
-                _init_storage(app)
-            except Exception as exc:
-                app.logger.warning("Storage init skipped: %s", exc)
-    else:
+    with app.app_context():
         try:
-            with app.app_context():
-                _init_storage(app)
+            _init_database(app)
+        except Exception as exc:
+            app.logger.error("Database init failed: %s", exc)
+        try:
+            _init_storage(app)
         except Exception as exc:
             app.logger.warning("Storage init skipped: %s", exc)
-
-        @app.before_request
-        def _lazy_db_init():
-            if request.path in ("/api/health", "/") or not request.path.startswith("/api/"):
-                return
-            try:
-                _ensure_db(app)
-            except Exception as exc:
-                app.logger.error("Database connection failed: %s", exc)
-                from flask import jsonify
-                return jsonify({
-                    "error": "Database unavailable. Use Supabase Session pooler (port 6543) in DATABASE_URL.",
-                    "detail": str(exc),
-                }), 503
 
     @app.route("/")
     def index():

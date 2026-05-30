@@ -34,6 +34,7 @@
 | [docs/architecture.md](docs/architecture.md) | System diagram and request flows |
 | [docs/schema.sql](docs/schema.sql) | PostgreSQL DDL |
 | [docs/supabase-storage.md](docs/supabase-storage.md) | Supabase buckets and service role key |
+| [docs/deploy-render.md](docs/deploy-render.md) | Deploy Flask API on Render |
 | [docs/screenshots/README.md](docs/screenshots/README.md) | Suggested screenshots for submissions |
 
 ## Prerequisites
@@ -76,24 +77,19 @@ All settings are driven by environment variables. **Do not commit secrets.**
    pip install -r requirements.txt
    ```
 
-## Deploy backend on Vercel
+## Deploy backend on Render
 
-1. **Root Directory** → `backend`
-2. **Install Command** (override ON): `pip install -r requirements.txt` — leave **Build Command** empty  
-   (`backend/vercel.json` also sets this if dashboard overrides are off)
-3. **Required env vars:** `DATABASE_URL` (Supabase **Session pooler**, port **6543** — not `db.*:5432`), `SECRET_KEY`, `JWT_SECRET_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, plus SMTP/admin vars from [backend/.env.example](backend/.env.example)
+Hosted API uses [Render](https://render.com) (Gunicorn web service). Full guide: [docs/deploy-render.md](docs/deploy-render.md).
 
-   Get pooler URI: Supabase → **Project Settings → Database → Connection string → Session pooler → URI**
+**Quick path (Blueprint):**
 
-4. **First deploy:** In Supabase **SQL Editor**, run [docs/schema.sql](docs/schema.sql) to create tables (Vercel skips auto `create_all`).
+1. Render → **New** → **Blueprint** → connect this GitHub repo (`render.yaml` at repo root).
+2. Set secrets in the service **Environment** tab: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, SMTP vars, `ADMIN_EMAIL`, `ADMIN_PASSWORD`.
+3. Deploy → test `https://<your-service>.onrender.com/api/health`.
+4. Optional: `POST https://<your-service>.onrender.com/api/auth/setup` to ensure admin exists.
 
-5. Test: `https://your-api.vercel.app/api/health` → `{"status":"ok"}`
+**Frontend:** keep on Vercel (or any static host). Set `VITE_API_URL=https://<your-service>.onrender.com/api` and redeploy (see [frontend/.env.example](frontend/.env.example)).
 
-6. Setup admin: `POST https://your-api.vercel.app/api/auth/setup` (note the `/api` prefix)
-
-**Common error:** `Cannot assign requested address` on `db.*.supabase.co:5432` → switch `DATABASE_URL` to the **pooler** URL (port **6543**).
-
-**Frontend (separate project):** Root Directory `frontend`, set `VITE_API_URL=https://your-api.vercel.app/api` (see [frontend/.env.example](frontend/.env.example)).
 
 ## Quick start
 
@@ -205,7 +201,9 @@ employee-salaryslip-nippon/
 │   │   └── templates/
 │   ├── storage/              # local fallback (uploads, payslips)
 │   ├── requirements.txt
+│   ├── Procfile                # Gunicorn start (Render)
 │   └── run.py
+├── render.yaml                 # Render Blueprint
 ├── frontend/                 # React admin UI (Slip Desk)
 ├── samples/                  # CSV templates
 └── docs/
