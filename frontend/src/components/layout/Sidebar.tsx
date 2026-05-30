@@ -40,11 +40,11 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[min(100vw-3rem,17rem)] flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-transform duration-200 ease-out lg:static lg:z-auto lg:w-56 lg:shrink-0 lg:translate-x-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+          "fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-[min(100vw-3rem,17rem)] flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-transform duration-200 ease-out lg:z-30 lg:w-56",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="flex items-start justify-between border-b border-[var(--color-border)] px-5 py-6 sm:px-6 sm:py-8">
+        <div className="shrink-0 flex items-start justify-between border-b border-[var(--color-border)] px-5 py-6 sm:px-6 sm:py-8">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--color-muted)]">
               Payroll
@@ -61,7 +61,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           </button>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3 sm:p-4">
+        <nav className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
           {links.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -70,7 +70,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
               onClick={handleNav}
               className={({ isActive }) =>
                 cn(
-                  "flex min-h-11 items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
+                  "mb-1 flex min-h-11 items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors last:mb-0",
                   isActive
                     ? "bg-[var(--color-accent-soft)] font-medium text-[var(--color-accent)]"
                     : "text-[var(--color-muted)] hover:bg-[var(--color-canvas)] hover:text-[var(--color-ink)]"
@@ -83,7 +83,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           ))}
         </nav>
 
-        <div className="border-t border-[var(--color-border)] p-3 sm:p-4">
+        <div className="shrink-0 border-t border-[var(--color-border)] p-3 sm:p-4">
           <button
             type="button"
             onClick={signOut}

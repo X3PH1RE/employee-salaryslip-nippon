@@ -28,7 +28,7 @@ export function AppLayout() {
     <div className="flex min-h-screen min-h-[100dvh] flex-col lg:flex-row">
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col lg:pl-56">
         <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 px-4 py-3 backdrop-blur-sm lg:hidden">
           <button
             type="button"
