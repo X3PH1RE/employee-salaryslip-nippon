@@ -318,12 +318,17 @@ export function PayrollPage() {
                       key={doc.id}
                       className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <span className="min-w-0 text-[var(--color-ink)]">
-                        {doc.employee_name ?? "Unknown"} ({doc.employee_id ?? "—"})
-                        {doc.status === "failed" && (
-                          <span className="ml-2 text-[var(--color-danger)]">failed</span>
+                      <div className="min-w-0 text-[var(--color-ink)]">
+                        <span>
+                          {doc.employee_name ?? "Unknown"} ({doc.employee_id ?? "—"})
+                          {doc.status === "failed" && (
+                            <span className="ml-2 text-[var(--color-danger)]">failed</span>
+                          )}
+                        </span>
+                        {doc.status === "failed" && doc.error_message && (
+                          <p className="mt-1 text-xs break-words text-red-800">{doc.error_message}</p>
                         )}
-                      </span>
+                      </div>
                       {doc.downloadable && doc.filename && (
                         <Button
                           variant="ghost"

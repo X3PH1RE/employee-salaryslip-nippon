@@ -23,7 +23,28 @@ class StorageService:
         return create_client(Config.SUPABASE_URL, Config.SUPABASE_SERVICE_KEY)
 
     @staticmethod
+    def verify_credentials() -> str | None:
+        """Return an error message if Supabase is enabled but credentials are invalid."""
+        if not StorageService.enabled():
+            return None
+        try:
+            client = StorageService._client()
+            client.storage.list_buckets()
+            return None
+        except Exception as exc:
+            msg = str(exc)
+            if "Invalid API key" in msg or "invalid" in msg.lower():
+                return (
+                    "Supabase rejected SUPABASE_SERVICE_KEY (Invalid API key). "
+                    "Use the service_role secret from Project Settings → API, not the anon key."
+                )
+            return f"Supabase storage unavailable: {msg}"
+
+    @staticmethod
     def ensure_buckets():
+        err = StorageService.verify_credentials()
+        if err:
+            raise RuntimeError(err)
         if not StorageService.enabled():
             return
         client = StorageService._client()

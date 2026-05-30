@@ -14,9 +14,9 @@ Paths are saved in the database as `supabase://bucket/path/to/file.pdf`.
 In Supabase Dashboard → **Project Settings → API**:
 
 - **Project URL** → `SUPABASE_URL`
-- **service_role** key (secret) → `SUPABASE_SERVICE_KEY`
+- **service_role** key (secret) → `SUPABASE_SERVICE_KEY` — **not** the `anon` / public key
 
-Do not expose the service role key in the frontend.
+If PDF generation fails with **Invalid API key**, fix `SUPABASE_SERVICE_KEY` in `.env` (local) or Vercel env vars, restart/redeploy, then click **Generate PDFs** again.
 
 ## 2. Buckets
 
