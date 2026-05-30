@@ -3,18 +3,34 @@ import { useQuery } from "@tanstack/react-query"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, cardHeaderRow } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { fetchDashboardSummary, queryKeys } from "@/lib/queries"
+import { buttonVariants } from "@/components/ui/button"
+import {
+  fetchEmployees,
+  fetchPayrollBatches,
+  fetchPayslipJobs,
+  queryKeys,
+} from "@/lib/queries"
+import { cn } from "@/lib/utils"
 
 const MONTHS = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 export function DashboardPage() {
-  const { data, isPending } = useQuery({
-    queryKey: queryKeys.dashboardSummary,
-    queryFn: fetchDashboardSummary,
-  })
+  const employees = useQuery({ queryKey: queryKeys.employees, queryFn: fetchEmployees })
+  const batches = useQuery({ queryKey: queryKeys.payrollBatches, queryFn: fetchPayrollBatches })
+  const jobs = useQuery({ queryKey: queryKeys.payslipJobs, queryFn: fetchPayslipJobs })
 
-  if (isPending || !data) {
+  const employeeList = employees.data ?? []
+  const batchList = batches.data ?? []
+  const jobList = jobs.data ?? []
+  const recentBatches = batchList.slice(0, 5)
+  const recentJobs = jobList.slice(0, 5)
+
+  const hasCachedData = employees.data || batches.data || jobs.data
+  const isInitialLoad =
+    !hasCachedData &&
+    (employees.isPending || batches.isPending || jobs.isPending)
+
+  if (isInitialLoad) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center text-sm text-[var(--color-muted)]">
         Loading overview…
@@ -22,7 +38,27 @@ export function DashboardPage() {
     )
   }
 
-  const { employee_count, batch_total, batches, jobs } = data
+  const allFailed =
+    employees.isError && batches.isError && jobs.isError && !hasCachedData
+
+  if (allFailed) {
+    return (
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-center">
+        <p className="text-sm text-[var(--color-danger)]">Could not load overview.</p>
+        <button
+          type="button"
+          className="text-sm text-[var(--color-accent)] underline"
+          onClick={() => {
+            void employees.refetch()
+            void batches.refetch()
+            void jobs.refetch()
+          }}
+        >
+          Try again
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -33,9 +69,9 @@ export function DashboardPage() {
 
       <div className="mb-8 grid gap-3 sm:mb-10 sm:grid-cols-3 sm:gap-4">
         {[
-          { label: "Employees on file", value: employee_count },
-          { label: "Payroll batches", value: batch_total },
-          { label: "Recent jobs", value: jobs.length },
+          { label: "Employees on file", value: employeeList.length },
+          { label: "Payroll batches", value: batchList.length },
+          { label: "Recent jobs", value: recentJobs.length },
         ].map((s) => (
           <Card key={s.label}>
             <CardContent className="pt-4 sm:pt-6">
@@ -53,16 +89,19 @@ export function DashboardPage() {
               <CardTitle>Recent payroll</CardTitle>
               <CardDescription>Monthly upload batches</CardDescription>
             </div>
-            <Button variant="outline" size="sm" className="w-full shrink-0 sm:w-auto" asChild>
-              <Link to="/payroll">Upload</Link>
-            </Button>
+            <Link
+              to="/payroll"
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full shrink-0 sm:w-auto")}
+            >
+              Upload
+            </Link>
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {batches.length === 0 ? (
+              {recentBatches.length === 0 ? (
                 <li className="text-sm text-[var(--color-muted)]">No batches yet</li>
               ) : (
-                batches.map((b) => (
+                recentBatches.map((b) => (
                   <li
                     key={b.id}
                     className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between"
@@ -85,10 +124,10 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {jobs.length === 0 ? (
+              {recentJobs.length === 0 ? (
                 <li className="text-sm text-[var(--color-muted)]">No jobs yet</li>
               ) : (
-                jobs.map((j) => (
+                recentJobs.map((j) => (
                   <li
                     key={j.id}
                     className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between"

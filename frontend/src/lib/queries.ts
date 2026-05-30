@@ -42,6 +42,7 @@ export const queryKeys = {
   dashboardSummary: ["dashboard", "summary"] as const,
   employees: ["employees", "list"] as const,
   payrollBatches: ["payroll", "batches"] as const,
+  payslipJobs: ["payslips", "jobs"] as const,
   audit: ["audit", "list"] as const,
 }
 
@@ -60,6 +61,19 @@ export async function fetchPayrollBatches(): Promise<PayrollBatch[]> {
   return data
 }
 
+export type PayslipJobSummary = {
+  id: number
+  batch_id: number
+  status: string
+  completed: number
+  total: number
+}
+
+export async function fetchPayslipJobs(): Promise<PayslipJobSummary[]> {
+  const { data } = await api.get<PayslipJobSummary[]>("/payslips/jobs")
+  return data
+}
+
 export async function fetchAuditLogs(): Promise<AuditLog[]> {
   const { data } = await api.get<AuditLog[]>("/audit")
   return data
@@ -68,10 +82,12 @@ export async function fetchAuditLogs(): Promise<AuditLog[]> {
 /** Prefetch all list data once after login / app shell mount. */
 export function prefetchAppData(client: QueryClient) {
   return Promise.all([
-    client.prefetchQuery({ queryKey: queryKeys.dashboardSummary, queryFn: fetchDashboardSummary }),
     client.prefetchQuery({ queryKey: queryKeys.employees, queryFn: fetchEmployees }),
     client.prefetchQuery({ queryKey: queryKeys.payrollBatches, queryFn: fetchPayrollBatches }),
+    client.prefetchQuery({ queryKey: queryKeys.payslipJobs, queryFn: fetchPayslipJobs }),
     client.prefetchQuery({ queryKey: queryKeys.audit, queryFn: fetchAuditLogs }),
+    // Optional aggregate — overview works without it via the queries above
+    client.prefetchQuery({ queryKey: queryKeys.dashboardSummary, queryFn: fetchDashboardSummary }),
   ])
 }
 
@@ -88,6 +104,7 @@ export function invalidateAfterPayrollChange(client: QueryClient) {
 }
 
 export function invalidateAfterPayslipJob(client: QueryClient) {
+  void client.invalidateQueries({ queryKey: queryKeys.payslipJobs })
   void client.invalidateQueries({ queryKey: queryKeys.dashboardSummary })
   void client.invalidateQueries({ queryKey: queryKeys.audit })
 }
