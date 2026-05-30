@@ -12,8 +12,7 @@ def _normalize_db_url(url: str) -> str:
 
 
 def _should_use_sqlite() -> bool:
-    # Render and other hosts set DATABASE_URL + USE_SQLITE=false
-    if os.getenv("RENDER"):
+    if os.getenv("VERCEL") or os.getenv("VERCEL_ENV"):
         return False
     return os.getenv("USE_SQLITE", "true").lower() == "true"
 

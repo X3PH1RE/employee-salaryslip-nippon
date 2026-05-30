@@ -13,7 +13,11 @@ from flask_cors import CORS
 from app.config import Config
 from app.extensions import db, jwt
 
-_initialized = False
+_db_initialized = False
+
+
+def _is_serverless() -> bool:
+    return bool(os.getenv("VERCEL") or os.getenv("VERCEL_ENV"))
 
 
 def _init_database(app: Flask):
@@ -21,7 +25,9 @@ def _init_database(app: Flask):
         Admin, AuditLog, EmailDelivery, Employee,
         PayrollBatch, PayrollRecord, PayslipDocument, PayslipJob,
     )
-    db.create_all()
+    # Vercel: run docs/schema.sql in Supabase once — skip DDL on cold start
+    if not _is_serverless():
+        db.create_all()
     from app.services.auth_service import AuthService
     AuthService.ensure_default_admin(Config.ADMIN_EMAIL, Config.ADMIN_PASSWORD)
 
@@ -32,21 +38,20 @@ def _init_storage(app: Flask):
     UploadService.ensure_dirs()
 
 
-def _ensure_initialized(app: Flask):
-    global _initialized
-    if _initialized:
+def _ensure_db(app: Flask):
+    global _db_initialized
+    if _db_initialized:
         return None
     with app.app_context():
         try:
             _init_database(app)
         except Exception as exc:
             app.logger.error("Database init failed: %s", exc)
-            return jsonify({"error": "Database unavailable", "detail": str(exc)}), 503
-        try:
-            _init_storage(app)
-        except Exception as exc:
-            app.logger.warning("Storage init skipped: %s", exc)
-    _initialized = True
+            return jsonify({
+                "error": "Database unavailable. Use Supabase Session pooler (port 6543) in DATABASE_URL.",
+                "detail": str(exc),
+            }), 503
+    _db_initialized = True
     return None
 
 
@@ -62,13 +67,12 @@ def create_app():
     from app.api import api_bp
     app.register_blueprint(api_bp, url_prefix="/api")
 
-    # Local dev: init on startup. Render: lazy init so Gunicorn binds before DB/Supabase.
-    if not os.getenv("RENDER"):
+    if not _is_serverless():
         with app.app_context():
             try:
                 _init_database(app)
-                global _initialized
-                _initialized = True
+                global _db_initialized
+                _db_initialized = True
             except Exception as exc:
                 app.logger.error("Database init failed: %s", exc)
             try:
@@ -76,13 +80,17 @@ def create_app():
             except Exception as exc:
                 app.logger.warning("Storage init skipped: %s", exc)
     else:
+        try:
+            with app.app_context():
+                _init_storage(app)
+        except Exception as exc:
+            app.logger.warning("Storage init skipped: %s", exc)
+
         @app.before_request
-        def _lazy_init():
-            if request.path in ("/", "/api/health"):
+        def _lazy_db_init():
+            if request.path in ("/", "/api/health") or not request.path.startswith("/api/"):
                 return None
-            if not request.path.startswith("/api/"):
-                return None
-            return _ensure_initialized(app)
+            return _ensure_db(app)
 
     @app.route("/")
     def index():

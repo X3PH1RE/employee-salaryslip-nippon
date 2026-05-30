@@ -17,7 +17,6 @@ dependencies = [
   "jinja2==3.1.4",
   "werkzeug==3.0.4",
   "bcrypt==4.2.0",
-  "gunicorn==22.0.0",
 ]
 
 [project.optional-dependencies]
@@ -26,4 +25,11 @@ dev = [
   "weasyprint==62.3",
   "celery==5.4.0",
   "redis==5.0.8",
+  "gunicorn==22.0.0",
 ]
+
+[tool.vercel]
+entrypoint = "run:app"
+
+[tool.vercel.scripts]
+install = "pip install --upgrade pip && pip install --prefer-binary -r requirements-vercel.txt"

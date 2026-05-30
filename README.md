@@ -34,7 +34,7 @@
 | [docs/architecture.md](docs/architecture.md) | System diagram and request flows |
 | [docs/schema.sql](docs/schema.sql) | PostgreSQL DDL |
 | [docs/supabase-storage.md](docs/supabase-storage.md) | Supabase buckets and service role key |
-| [docs/deploy-render.md](docs/deploy-render.md) | Deploy Flask API on Render |
+| [docs/deploy-vercel.md](docs/deploy-vercel.md) | Deploy Flask API on Vercel |
 | [docs/screenshots/README.md](docs/screenshots/README.md) | Suggested screenshots for submissions |
 
 ## Prerequisites
@@ -79,20 +79,18 @@ All settings are driven by environment variables. **Do not commit secrets.**
    pip install -r requirements-dev.txt
    ```
 
-## Deploy backend on Render
+## Deploy backend on Vercel
 
-Hosted API uses [Render](https://render.com) (Gunicorn web service). Full guide: [docs/deploy-render.md](docs/deploy-render.md).
+Full guide: [docs/deploy-vercel.md](docs/deploy-vercel.md).
 
-**Quick path (Blueprint):**
+1. **Root Directory** → `backend`
+2. **Install Command**: `pip install --upgrade pip && pip install --prefer-binary -r requirements-vercel.txt` — leave **Build Command** empty
+3. **Env vars:** `DATABASE_URL` (Supabase **Session pooler**, port **6543**), `USE_SQLITE=false`, `SECRET_KEY`, `JWT_SECRET_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, SMTP/admin vars from [backend/.env.example](backend/.env.example)
+4. Run [docs/schema.sql](docs/schema.sql) once in Supabase SQL Editor
+5. Test: `https://your-api.vercel.app/api/health`
+6. **Frontend** (separate Vercel project): `VITE_API_URL=https://your-api.vercel.app/api`
 
-1. Render → **New** → **Blueprint** → connect this GitHub repo (`render.yaml` at repo root).
-2. Set secrets in the service **Environment** tab: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, SMTP vars, `ADMIN_EMAIL`, `ADMIN_PASSWORD`.
-3. Deploy → test `https://<your-service>.onrender.com/api/health`.
-4. Optional: `POST https://<your-service>.onrender.com/api/auth/setup` to ensure admin exists.
-
-**Frontend:** keep on Vercel (or any static host). Set `VITE_API_URL=https://<your-service>.onrender.com/api` and redeploy (see [frontend/.env.example](frontend/.env.example)).
-
-
+**Common errors:** bundle > 245 MB → use `requirements-vercel.txt`; DB connection → pooler URL `:6543`; storage → service_role key + `storage3>=2.28`.
 ## Quick start
 
 ### Backend
@@ -202,10 +200,11 @@ employee-salaryslip-nippon/
 │   │   ├── tasks/
 │   │   └── templates/
 │   ├── storage/              # local fallback (uploads, payslips)
+│   ├── requirements-vercel.txt  # Slim deps for Vercel (<245 MB)
 │   ├── requirements.txt
-│   ├── Procfile                # Gunicorn start (Render)
+│   ├── requirements-dev.txt
+│   ├── vercel.json
 │   └── run.py
-├── render.yaml                 # Render Blueprint
 ├── frontend/                 # React admin UI (Slip Desk)
 ├── samples/                  # CSV templates
 └── docs/
