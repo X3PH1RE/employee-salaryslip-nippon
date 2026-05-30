@@ -48,7 +48,8 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+    # Wildcard origin cannot be used with credentials (browser CORS rule)
+    CORS(app, origins="*", supports_credentials=False)
 
     db.init_app(app)
     jwt.init_app(app)

@@ -1,7 +1,14 @@
 import axios from "axios"
 
-const baseURL = import.meta.env.VITE_API_URL ?? "/api"
+/** Backend root or .../api — always resolves to a URL ending in /api */
+function resolveBaseURL(): string {
+  const raw = import.meta.env.VITE_API_URL?.trim()
+  if (!raw) return "/api"
+  const url = raw.replace(/\/+$/, "")
+  return url.endsWith("/api") ? url : `${url}/api`
+}
 
+const baseURL = resolveBaseURL()
 const api = axios.create({
   baseURL,
 })
