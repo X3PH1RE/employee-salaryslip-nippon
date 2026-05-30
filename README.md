@@ -69,12 +69,14 @@ All settings are driven by environment variables. **Do not commit secrets.**
    | SMTP | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Gmail: use a 16-char [App Password](https://myaccount.google.com/apppasswords), not your login password |
    | Local files | `UPLOAD_FOLDER`, `PAYSLIP_FOLDER` | Used when Supabase storage keys are empty |
 
-3. Install Python dependencies (includes `supabase` for storage):
+3. Install Python dependencies:
 
    ```powershell
    python -m venv .venv
    .venv\Scripts\activate
    pip install -r requirements.txt
+   # Optional local extras (WeasyPrint PDF styling, pandas):
+   pip install -r requirements-dev.txt
    ```
 
 ## Deploy backend on Render

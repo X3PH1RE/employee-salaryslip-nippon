@@ -4,7 +4,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from app.api import api_bp
 from app.services.employee_service import EmployeeService
 from app.services.upload_service import UploadService
-from app.utils.file_parser import dataframe_to_records, read_tabular_file
+from app.utils.file_parser import read_tabular_file
 
 
 @api_bp.route("/employees", methods=["GET"])
@@ -22,8 +22,7 @@ def preview_employee_upload():
     file = request.files["file"]
     try:
         path = UploadService.save_upload(file, prefix="employees")
-        df = read_tabular_file(path)
-        rows = dataframe_to_records(df)
+        rows = read_tabular_file(path)
         result = EmployeeService.validate_upload_rows(rows)
         result["file_path"] = path
         return jsonify(result)

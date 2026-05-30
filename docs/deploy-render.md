@@ -22,7 +22,7 @@ The API runs as a **Web Service** on [Render](https://render.com) with Gunicorn.
 |---------|--------|
 | **Root Directory** | `backend` |
 | **Runtime** | Python 3 |
-| **Build Command** | `pip install -r requirements.txt` |
+| **Build Command** | `pip install --upgrade pip && pip install --prefer-binary -r requirements.txt` |
 | **Start Command** | `gunicorn "run:app" --bind 0.0.0.0:$PORT --workers 2 --timeout 120` |
 | **Health Check Path** | `/api/health` |
 
@@ -47,3 +47,4 @@ Redeploy the frontend after changing env vars.
 
 - Service **spins down** after ~15 minutes idle; first request may take 30–60s.
 - PDF/email jobs run **inline** (`CELERY_TASK_ALWAYS_EAGER=true`) — no separate worker needed.
+- **Build stuck on “Preparing metadata”?** Usually WeasyPrint/pandas compiling from source — production `requirements.txt` excludes them; PDFs use ReportLab on the server.
