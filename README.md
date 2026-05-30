@@ -34,7 +34,6 @@
 | [docs/architecture.md](docs/architecture.md) | System diagram and request flows |
 | [docs/schema.sql](docs/schema.sql) | PostgreSQL DDL |
 | [docs/supabase-storage.md](docs/supabase-storage.md) | Supabase buckets and service role key |
-| [docs/deploy-vercel.md](docs/deploy-vercel.md) | Deploy Flask API on Vercel |
 | [docs/screenshots/README.md](docs/screenshots/README.md) | Suggested screenshots for submissions |
 
 ## Prerequisites
@@ -69,28 +68,33 @@ All settings are driven by environment variables. **Do not commit secrets.**
    | SMTP | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Gmail: use a 16-char [App Password](https://myaccount.google.com/apppasswords), not your login password |
    | Local files | `UPLOAD_FOLDER`, `PAYSLIP_FOLDER` | Used when Supabase storage keys are empty |
 
-3. Install Python dependencies:
+3. Install Python dependencies (includes `supabase` for storage):
 
    ```powershell
    python -m venv .venv
    .venv\Scripts\activate
    pip install -r requirements.txt
-   # Optional local extras (WeasyPrint PDF styling, pandas):
-   pip install -r requirements-dev.txt
    ```
 
 ## Deploy backend on Vercel
 
-Full guide: [docs/deploy-vercel.md](docs/deploy-vercel.md).
-
 1. **Root Directory** → `backend`
-2. **Install Command**: `pip install --upgrade pip && pip install --prefer-binary -r requirements-vercel.txt` — leave **Build Command** empty
-3. **Env vars:** `DATABASE_URL` (Supabase **Session pooler**, port **6543**), `USE_SQLITE=false`, `SECRET_KEY`, `JWT_SECRET_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, SMTP/admin vars from [backend/.env.example](backend/.env.example)
-4. Run [docs/schema.sql](docs/schema.sql) once in Supabase SQL Editor
-5. Test: `https://your-api.vercel.app/api/health`
-6. **Frontend** (separate Vercel project): `VITE_API_URL=https://your-api.vercel.app/api`
+2. **Install Command** (override ON): `pip install -r requirements.txt` — leave **Build Command** empty  
+   (`backend/vercel.json` also sets this if dashboard overrides are off)
+3. **Required env vars:** `DATABASE_URL` (Supabase **Session pooler**, port **6543** — not `db.*:5432`), `SECRET_KEY`, `JWT_SECRET_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, plus SMTP/admin vars from [backend/.env.example](backend/.env.example)
 
-**Common errors:** bundle > 245 MB → use `requirements-vercel.txt`; DB connection → pooler URL `:6543`; storage → service_role key + `storage3>=2.28`.
+   Get pooler URI: Supabase → **Project Settings → Database → Connection string → Session pooler → URI**
+
+4. **First deploy:** In Supabase **SQL Editor**, run [docs/schema.sql](docs/schema.sql) to create tables (Vercel skips auto `create_all`).
+
+5. Test: `https://your-api.vercel.app/api/health` → `{"status":"ok"}`
+
+6. Setup admin: `POST https://your-api.vercel.app/api/auth/setup` (note the `/api` prefix)
+
+**Common error:** `Cannot assign requested address` on `db.*.supabase.co:5432` → switch `DATABASE_URL` to the **pooler** URL (port **6543**).
+
+**Frontend (separate project):** Root Directory `frontend`, set `VITE_API_URL=https://your-api.vercel.app/api` (see [frontend/.env.example](frontend/.env.example)).
+
 ## Quick start
 
 ### Backend
@@ -200,10 +204,7 @@ employee-salaryslip-nippon/
 │   │   ├── tasks/
 │   │   └── templates/
 │   ├── storage/              # local fallback (uploads, payslips)
-│   ├── requirements-vercel.txt  # Slim deps for Vercel (<245 MB)
 │   ├── requirements.txt
-│   ├── requirements-dev.txt
-│   ├── vercel.json
 │   └── run.py
 ├── frontend/                 # React admin UI (Slip Desk)
 ├── samples/                  # CSV templates

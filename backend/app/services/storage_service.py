@@ -18,22 +18,18 @@ class StorageService:
 
     @staticmethod
     def _client():
-        from storage3 import create_client
+        from supabase import create_client
 
-        url = f"{Config.SUPABASE_URL.rstrip('/')}/storage/v1/"
-        key = Config.SUPABASE_SERVICE_KEY
-        headers = {
-            "apikey": key,
-            "Authorization": f"Bearer {key}",
-        }
-        return create_client(url, headers, is_async=False)
+        return create_client(Config.SUPABASE_URL, Config.SUPABASE_SERVICE_KEY)
 
     @staticmethod
     def verify_credentials() -> str | None:
+        """Return an error message if Supabase is enabled but credentials are invalid."""
         if not StorageService.enabled():
             return None
         try:
-            StorageService._client().list_buckets()
+            client = StorageService._client()
+            client.storage.list_buckets()
             return None
         except Exception as exc:
             msg = str(exc)
@@ -46,21 +42,21 @@ class StorageService:
 
     @staticmethod
     def ensure_buckets():
-        if not StorageService.enabled():
-            return
         err = StorageService.verify_credentials()
         if err:
             raise RuntimeError(err)
+        if not StorageService.enabled():
+            return
         client = StorageService._client()
         existing: set[str] = set()
-        for b in client.list_buckets() or []:
+        for b in client.storage.list_buckets() or []:
             bucket_name = getattr(b, "name", None) or (b.get("name") if isinstance(b, dict) else None)
             if bucket_name:
                 existing.add(bucket_name)
         for name in (Config.SUPABASE_UPLOAD_BUCKET, Config.SUPABASE_PAYSLIP_BUCKET):
             if name not in existing:
                 try:
-                    client.create_bucket(name, options={"public": False})
+                    client.storage.create_bucket(name, options={"public": False})
                 except Exception:
                     pass
 
@@ -78,7 +74,8 @@ class StorageService:
 
     @staticmethod
     def upload_bytes(bucket: str, object_path: str, data: bytes, content_type: str) -> str:
-        StorageService._client().from_(bucket).upload(
+        client = StorageService._client()
+        client.storage.from_(bucket).upload(
             path=object_path,
             file=data,
             file_options={"content-type": content_type, "upsert": "true"},
@@ -90,7 +87,8 @@ class StorageService:
         parsed = StorageService.parse_uri(uri_or_path)
         if parsed:
             bucket, object_path = parsed
-            return StorageService._client().from_(bucket).download(object_path)
+            client = StorageService._client()
+            return client.storage.from_(bucket).download(object_path)
         with open(uri_or_path, "rb") as f:
             return f.read()
 

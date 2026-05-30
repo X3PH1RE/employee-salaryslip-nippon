@@ -1,4 +1,19 @@
--r requirements-vercel.txt
-
-# Optional: local production-style server (not used on Vercel)
+flask==3.0.3
+flask-sqlalchemy==3.1.1
+flask-cors==4.0.1
+flask-jwt-extended==4.6.0
+sqlalchemy==2.0.32
+psycopg2-binary==2.9.9
+python-dotenv==1.0.1
+pandas==2.2.2
+openpyxl==3.1.5
+celery==5.4.0
+redis==5.0.8
+weasyprint==62.3
+reportlab==4.2.2
+supabase==2.7.4
+storage3==0.7.7
+jinja2==3.1.4
+werkzeug==3.0.4
+bcrypt==4.2.0
 gunicorn==22.0.0

@@ -1,63 +1,22 @@
-import importlib.util
+from celery import Celery
 
 from app.config import Config
 
+# When CELERY_TASK_ALWAYS_EAGER=true (default), tasks run inside Flask — no Redis/worker.
+celery = Celery(
+    "payslip_worker",
+    broker=Config.CELERY_BROKER_URL,
+    backend=Config.CELERY_RESULT_BACKEND,
+    include=["app.tasks.payslip_tasks"],
+)
 
-def _celery_installed() -> bool:
-    return importlib.util.find_spec("celery") is not None
-
-
-class _EagerTaskResult:
-    id = "eager"
-
-
-class _EagerBoundTask:
-    def __init__(self, fn):
-        self.fn = fn
-
-    def delay(self, *args, **kwargs):
-        class _Self:
-            class request:
-                id = "eager"
-
-        self.fn(_Self(), *args, **kwargs)
-        return _EagerTaskResult()
-
-
-class _EagerCelery:
-    def task(self, bind=False, name=None):
-        def decorator(fn):
-            if bind:
-                return _EagerBoundTask(fn)
-
-            def delay(*args, **kwargs):
-                fn(*args, **kwargs)
-                return _EagerTaskResult()
-
-            fn.delay = delay
-            return fn
-
-        return decorator
-
-
-if Config.CELERY_TASK_ALWAYS_EAGER or not _celery_installed():
-    celery = _EagerCelery()
-else:
-    from celery import Celery
-
-    celery = Celery(
-        "payslip_worker",
-        broker=Config.CELERY_BROKER_URL,
-        backend=Config.CELERY_RESULT_BACKEND,
-        include=["app.tasks.payslip_tasks"],
-    )
-    celery.conf.update(
-        task_serializer="json",
-        accept_content=["json"],
-        result_serializer="json",
-        timezone="UTC",
-        enable_utc=True,
-        task_track_started=True,
-        task_always_eager=False,
-        task_eager_propagates=False,
-    )
+celery.conf.update(
+    task_serializer="json",
+    accept_content=["json"],
+    result_serializer="json",
+    timezone="UTC",
+    enable_utc=True,
+    task_track_started=True,
+    task_always_eager=Config.CELERY_TASK_ALWAYS_EAGER,
+    task_eager_propagates=Config.CELERY_TASK_ALWAYS_EAGER,
+)
