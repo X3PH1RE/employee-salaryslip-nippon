@@ -1,5 +1,7 @@
 import axios from "axios"
 
+import { getToken } from "@/lib/auth"
+
 /** Backend root or .../api — always resolves to a URL ending in /api */
 function resolveBaseURL(): string {
   const raw = import.meta.env.VITE_API_URL?.trim()
@@ -14,7 +16,7 @@ const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token")
+  const token = getToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }

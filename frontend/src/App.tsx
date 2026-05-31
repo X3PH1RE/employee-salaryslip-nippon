@@ -5,10 +5,13 @@ import { DashboardPage } from "@/pages/DashboardPage"
 import { EmployeesPage } from "@/pages/EmployeesPage"
 import { PayrollPage } from "@/pages/PayrollPage"
 import { AuditPage } from "@/pages/AuditPage"
+import { clearAuth, isTokenValid } from "@/lib/auth"
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const token = localStorage.getItem("token")
-  if (!token) return <Navigate to="/login" replace />
+  if (!isTokenValid()) {
+    clearAuth()
+    return <Navigate to="/login" replace />
+  }
   return <>{children}</>
 }
 

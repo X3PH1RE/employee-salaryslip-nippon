@@ -1,6 +1,8 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import api from "@/lib/api"
+import { clearAuth, isTokenValid, setToken } from "@/lib/auth"
+import { queryClient } from "@/lib/queryClient"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,13 +14,22 @@ export function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-    const submit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isTokenValid()) {
+      navigate("/", { replace: true })
+    } else {
+      clearAuth()
+    }
+  }, [navigate])
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
     try {
       const { data } = await api.post("/auth/login", { email, password })
-      localStorage.setItem("token", data.access_token)
+      queryClient.clear()
+      setToken(data.access_token)
       navigate("/")
     } catch {
       setError("Invalid email or password")
@@ -55,8 +66,8 @@ export function LoginPage() {
                 <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </div>
               {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in…" : "Continue"}
+              <Button type="submit" className="w-full" disabled={loading} loading={loading}>
+                Continue
               </Button>
             </form>
           </CardContent>

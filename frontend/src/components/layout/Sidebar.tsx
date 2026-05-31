@@ -1,6 +1,8 @@
 import { NavLink, useNavigate } from "react-router-dom"
 import { FileText, LayoutDashboard, LogOut, Upload, Users, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { clearAuth } from "@/lib/auth"
+import { queryClient } from "@/lib/queryClient"
 
 const links = [
   { to: "/", label: "Overview", icon: LayoutDashboard },
@@ -22,7 +24,8 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   }
 
   const signOut = () => {
-    localStorage.removeItem("token")
+    clearAuth()
+    queryClient.clear()
     onClose?.()
     navigate("/login")
   }
