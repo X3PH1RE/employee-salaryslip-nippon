@@ -5,6 +5,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from app.config import Config
+from app.utils.pdf_password import encrypt_pdf_bytes, payslip_pdf_password
 from app.models.payroll import PayrollRecord
 from app.services.storage_service import StorageService
 from app.services.upload_service import UploadService
@@ -101,4 +102,7 @@ class PDFGenerationService:
         html = PDFGenerationService._env().get_template("payslip.html").render(**ctx)
         filename = f"payslip_{record.employee_code}_{record.month}_{record.year}.pdf"
         pdf_bytes = PDFGenerationService._render_pdf_bytes(ctx, html)
+        emp = record.employee
+        password = payslip_pdf_password(emp.name, emp.birth_year, emp.employee_id)
+        pdf_bytes = encrypt_pdf_bytes(pdf_bytes, password)
         return StorageService.save_payslip_pdf(job_id, filename, pdf_bytes)

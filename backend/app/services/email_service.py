@@ -9,9 +9,11 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from app.config import Config
 from app.extensions import db
 from app.models.email import EmailDelivery
+from app.models.payroll import PayrollRecord
 from app.models.payslip import PayslipDocument
 from app.services.pdf_service import PDFGenerationService, TEMPLATE_DIR
 from app.services.storage_service import StorageService
+from app.utils.pdf_password import payslip_pdf_password
 
 
 class EmailService:
@@ -27,7 +29,12 @@ class EmailService:
             server.sendmail(Config.SMTP_FROM, [to_email], msg.as_string())
 
     @staticmethod
-    def render_body(name: str, month: int, year: int) -> str:
+    def render_body(
+        name: str,
+        month: int,
+        year: int,
+        pdf_password: str | None = None,
+    ) -> str:
         month_name = PDFGenerationService.MONTH_NAMES[month]
         env = Environment(
             loader=FileSystemLoader(str(TEMPLATE_DIR)),
@@ -38,6 +45,7 @@ class EmailService:
             month_name=month_name,
             year=year,
             company_name=Config.COMPANY_NAME,
+            pdf_password=pdf_password,
         )
 
     @staticmethod
@@ -49,13 +57,16 @@ class EmailService:
         month: int,
         year: int,
         admin_email: str | None = None,
+        birth_year: int | None = None,
+        employee_id: str | None = None,
     ) -> EmailDelivery:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = f"Salary Slip — {PDFGenerationService.MONTH_NAMES[month]} {year}"
         msg["From"] = Config.SMTP_FROM
         msg["To"] = employee_email
 
-        html_body = EmailService.render_body(employee_name, month, year)
+        pdf_password = payslip_pdf_password(employee_name, birth_year, employee_id or "")
+        html_body = EmailService.render_body(employee_name, month, year, pdf_password)
         msg.attach(MIMEText(html_body, "html"))
 
         if document.file_path and StorageService.exists(document.file_path):
@@ -78,16 +89,42 @@ class EmailService:
         return delivery
 
     @staticmethod
+    def prepare_pending_deliveries(job_id: int) -> None:
+        """Create pending delivery rows before send so polling can report progress."""
+        docs = PayslipDocument.query.filter_by(job_id=job_id, status="generated").all()
+        for doc in docs:
+            existing = EmailDelivery.query.filter_by(payslip_document_id=doc.id).first()
+            if existing:
+                if existing.status in ("sent", "failed"):
+                    existing.status = "pending"
+                    existing.error_message = None
+                    existing.sent_at = None
+                continue
+            record = PayrollRecord.query.get(doc.payroll_record_id)
+            email = record.employee.email if record and record.employee else ""
+            db.session.add(
+                EmailDelivery(
+                    payslip_document_id=doc.id,
+                    employee_email=email,
+                    status="pending",
+                )
+            )
+        db.session.commit()
+
+    @staticmethod
     def get_delivery_stats(job_id: int) -> dict:
-        docs = PayslipDocument.query.filter_by(job_id=job_id).all()
+        docs = PayslipDocument.query.filter_by(job_id=job_id, status="generated").all()
         doc_ids = [d.id for d in docs]
-        deliveries = EmailDelivery.query.filter(
-            EmailDelivery.payslip_document_id.in_(doc_ids)
-        ).all() if doc_ids else []
+        deliveries = (
+            EmailDelivery.query.filter(EmailDelivery.payslip_document_id.in_(doc_ids)).all()
+            if doc_ids
+            else []
+        )
 
         sent = sum(1 for d in deliveries if d.status == "sent")
         failed = sum(1 for d in deliveries if d.status == "failed")
         pending = sum(1 for d in deliveries if d.status == "pending")
+        total = max(len(deliveries), len(docs))
         failures = [
             {
                 "email": d.employee_email,
@@ -96,10 +133,12 @@ class EmailService:
             for d in deliveries
             if d.status == "failed" and d.error_message
         ]
+        if total > len(deliveries):
+            pending += total - len(deliveries)
         return {
             "sent": sent,
             "failed": failed,
             "pending": pending,
-            "total": len(deliveries),
+            "total": total,
             "failures": failures,
         }

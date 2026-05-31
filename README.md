@@ -5,9 +5,9 @@ Admin portal (**Slip Desk**) to upload employee and payroll data, generate paysl
 ## Features
 
 - JWT admin login with session expiry handling
-- Employee roster and monthly payroll upload (CSV / Excel) with validation preview
-- PDF generation with progress tracking and per-employee download or ZIP export
-- SMTP email dispatch with delivery status in the UI
+- Employee roster and monthly payroll upload (CSV / Excel) with validation preview and sample CSV downloads
+- Password-protected PDF generation (`first 4 letters of name` + `birth year`) with per-employee download or ZIP export
+- SMTP email dispatch with sent / failed / pending status in the UI
 - Optional Supabase PostgreSQL + Storage, or local SQLite and filesystem
 - Audit log of uploads, PDF jobs, and email runs
 
@@ -18,7 +18,7 @@ Admin portal (**Slip Desk**) to upload employee and payroll data, generate paysl
 | Frontend | React, Vite, TypeScript, Tailwind, TanStack Query & Table |
 | Backend | Flask, SQLAlchemy, JWT |
 | Database | SQLite (local default) or Supabase Postgres |
-| PDF / email | ReportLab or WeasyPrint, SMTP (runs inline — no Redis required by default) |
+| PDF / email | ReportLab or WeasyPrint, `pypdf` (PDF encryption), SMTP (runs inline — no Redis required by default) |
 
 ## Prerequisites
 
@@ -81,12 +81,12 @@ Change via `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `backend/.env`.
 
 ## Usage
 
-1. **Employees** — Upload a roster CSV (use **Download sample CSV** on the page) → preview → import.
+1. **Employees** — Upload a roster CSV (use **Download sample CSV** on the page) → preview → import. Include `birth_year` so payslip PDFs can be password-protected.
 2. **Payroll** — Upload monthly salary data (sample CSV available on the page) → preview → save batch.  
    Payroll rows must match existing employee IDs.
-3. **Generate PDFs** — Click **Generate PDFs** on a batch. Progress and ETA show in the job card.
+3. **Generate PDFs** — Click **Generate PDFs** on a batch. A spinner shows in the job card while PDFs are being created; the job status updates when complete. Each PDF is password-protected (`first 4 letters of name` + `birth year`, e.g. Johny 1998 → `john1998`). Regenerate PDFs after changing employee data or deploying password changes.
 4. **Download** — **Download all (ZIP)** or individual **PDF** buttons when the job completes.
-5. **Send emails** — **Send payslip emails** (requires SMTP in `.env`).
+5. **Send emails** — **Send payslip emails** (requires SMTP in `.env`). The email body includes the PDF password.
 6. **Activity** — View the audit trail.
 
 Sample files are also in [`samples/`](samples/) at the repo root.
@@ -122,6 +122,10 @@ SMTP_USE_TLS=true
 ```
 
 Requires 2-Step Verification and an App Password on your Google account.
+
+### Background jobs (local default)
+
+With `CELERY_TASK_ALWAYS_EAGER=true`, PDF generation and email dispatch run **synchronously inside the Flask request**.
 
 ## Deploy (Vercel)
 

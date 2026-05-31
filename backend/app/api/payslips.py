@@ -125,8 +125,14 @@ def start_dispatch():
 
     admin_email = get_jwt_identity()
     try:
+        EmailService.prepare_pending_deliveries(job_id)
+        stats = EmailService.get_delivery_stats(job_id)
         task = dispatch_emails_task.delay(job_id, admin_email)
-        return jsonify({"message": "Email dispatch queued", "task_id": task.id}), 202
+        return jsonify({
+            "message": "Email dispatch queued",
+            "task_id": task.id,
+            "email_stats": stats,
+        }), 202
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
 

@@ -11,7 +11,7 @@ import api, {
 import { Download } from "lucide-react"
 import { DataTable } from "@/components/DataTable"
 import { FileUploadZone } from "@/components/FileUploadZone"
-import { JobProgressBar } from "@/components/JobProgressBar"
+import { JobLoader } from "@/components/JobLoader"
 import { SampleCsvDownload } from "@/components/SampleCsvDownload"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/layout/PageHeader"
@@ -63,8 +63,6 @@ export function PayrollPage() {
   const [zipLoading, setZipLoading] = useState(false)
   const [dispatchLoading, setDispatchLoading] = useState(false)
   const [downloadingId, setDownloadingId] = useState<number | null>(null)
-  const [pdfStartedAt, setPdfStartedAt] = useState<number | null>(null)
-  const [emailStartedAt, setEmailStartedAt] = useState<number | null>(null)
   const [emailRunning, setEmailRunning] = useState(false)
 
   const jobRunning = job !== null && !JOB_DONE.includes(job.status)
@@ -76,6 +74,9 @@ export function PayrollPage() {
     emailStats.total > 0 &&
     emailStats.pending === 0
   const showEmailStatus = emailStats !== null && (emailRunning || emailStats.total > 0)
+  const generatedDocCount = documents.filter(
+    (d) => d.status === "generated" || d.downloadable
+  ).length
 
   const stopPolling = () => {
     if (pollRef.current) {
@@ -86,7 +87,7 @@ export function PayrollPage() {
 
   const pollJob = (jobId: number, mode: "pdf" | "email") => {
     stopPolling()
-    pollRef.current = setInterval(async () => {
+    const tick = async () => {
       try {
         const { data } = await api.get(`/payslips/jobs/${jobId}`)
         setJob(data.job)
@@ -96,7 +97,6 @@ export function PayrollPage() {
         if (mode === "pdf" && JOB_DONE.includes(data.job.status)) {
           stopPolling()
           setGeneratingBatchId(null)
-          setPdfStartedAt(null)
           setPdfResultMessage(`PDFs ready: ${data.job.completed} generated, ${data.job.failed} failed`)
           invalidateAfterPayslipJob(queryClient)
         }
@@ -107,7 +107,6 @@ export function PayrollPage() {
           if (stats.total > 0 && stats.pending === 0 && done >= stats.total) {
             stopPolling()
             setEmailRunning(false)
-            setEmailStartedAt(null)
             invalidateAfterPayslipJob(queryClient)
           }
         }
@@ -115,11 +114,11 @@ export function PayrollPage() {
         stopPolling()
         setGeneratingBatchId(null)
         setEmailRunning(false)
-        setPdfStartedAt(null)
-        setEmailStartedAt(null)
         setPdfResultMessage("Could not check job status")
       }
-    }, 2000)
+    }
+    void tick()
+    pollRef.current = setInterval(() => void tick(), 1000)
   }
 
   const columns = useMemo<ColumnDef<PayrollPreviewRow>[]>(
@@ -184,8 +183,6 @@ export function PayrollPage() {
     setEmailStats(null)
     setDocuments([])
     setEmailRunning(false)
-    setEmailStartedAt(null)
-    setPdfStartedAt(Date.now())
     try {
       const { data } = await api.post("/payslips/generate", { batch_id: batchId })
       setJob(data.job)
@@ -197,7 +194,6 @@ export function PayrollPage() {
           : null
       setPdfResultMessage(msg || "Failed to queue PDF generation")
       setGeneratingBatchId(null)
-      setPdfStartedAt(null)
     }
   }
 
@@ -229,14 +225,31 @@ export function PayrollPage() {
     if (!job) return
     setDispatchLoading(true)
     setEmailRunning(true)
-    setEmailStartedAt(Date.now())
     setEmailDispatchError("")
+    const expectedTotal = generatedDocCount || job.completed || job.total || 0
+    setEmailStats({
+      sent: 0,
+      failed: 0,
+      pending: expectedTotal,
+      total: expectedTotal,
+      failures: [],
+    })
+    pollJob(job.id, "email")
     try {
-      await api.post("/payslips/dispatch", { job_id: job.id })
-      pollJob(job.id, "email")
+      const { data } = await api.post("/payslips/dispatch", { job_id: job.id })
+      if (data.email_stats) {
+        const stats = data.email_stats as EmailStats
+        setEmailStats(stats)
+        const done = stats.sent + stats.failed
+        if (stats.total > 0 && stats.pending === 0 && done >= stats.total) {
+          stopPolling()
+          setEmailRunning(false)
+          invalidateAfterPayslipJob(queryClient)
+        }
+      }
     } catch {
+      stopPolling()
       setEmailRunning(false)
-      setEmailStartedAt(null)
       setEmailDispatchError("Dispatch failed — check SMTP config")
     } finally {
       setDispatchLoading(false)
@@ -354,14 +367,26 @@ export function PayrollPage() {
               )}
 
               {showPdfProgress && (
-                <JobProgressBar
-                  label="Generating PDFs"
-                  completed={job.completed}
-                  failed={job.failed}
-                  total={job.total || batches.find((b) => b.id === job.batch_id)?.record_count || 0}
-                  active
-                  startedAt={pdfStartedAt}
-                  secondsPerItem={8}
+                <JobLoader
+                  label="Generating PDFs…"
+                  detail={
+                    job.total > 0
+                      ? `${job.completed + job.failed}/${job.total} processed`
+                      : undefined
+                  }
+                />
+              )}
+
+              {emailRunning && (
+                <JobLoader
+                  label="Sending emails…"
+                  detail={
+                    emailStats && emailStats.total > 0
+                      ? `${emailStats.sent + emailStats.failed}/${emailStats.total} sent`
+                      : generatedDocCount > 0
+                        ? `0/${generatedDocCount} sent`
+                        : undefined
+                  }
                 />
               )}
 
@@ -392,18 +417,6 @@ export function PayrollPage() {
 
               {emailDispatchError && (
                 <p className="mt-2 text-sm text-[var(--color-danger)]">{emailDispatchError}</p>
-              )}
-
-              {emailRunning && emailStats && (
-                <JobProgressBar
-                  label="Sending emails"
-                  completed={emailStats.sent}
-                  failed={emailStats.failed}
-                  total={emailStats.total}
-                  active={emailRunning}
-                  startedAt={emailStartedAt}
-                  secondsPerItem={4}
-                />
               )}
 
               {JOB_DONE.includes(job.status) && !emailRunning && (

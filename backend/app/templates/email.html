@@ -9,6 +9,15 @@
     Please find attached your salary slip for <strong>{{ month_name }} {{ year }}</strong>
     from {{ company_name }}.
   </p>
+  {% if pdf_password %}
+  <p>
+    The PDF is password-protected.
+  </p>
+  <p style="color: #666; font-size: 14px;">
+    Password format: first four letters of your name (lowercase) + birth year
+    (e.g. Johny, 1998 → john1998).
+  </p>
+  {% endif %}
   <p>
     Review the attachment at your convenience. If you notice any discrepancy,
     reach out to HR within five working days.

@@ -101,7 +101,8 @@ def _dispatch_emails(job_id: int, admin_email: str | None):
             db.session.flush()
 
         delivery = EmailService.send_payslip_email(
-            delivery, doc, emp.name, emp.email, record.month, record.year, admin_email
+            delivery, doc, emp.name, emp.email, record.month, record.year, admin_email,
+            birth_year=emp.birth_year, employee_id=emp.employee_id,
         )
         if delivery.status == "sent":
             sent += 1
