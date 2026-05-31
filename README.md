@@ -1,121 +1,63 @@
 # Employee Salary Slip Automation System
 
-**employee-salaryslip-nippon** — an admin portal to upload payroll data, generate salary slip PDFs, download them, and email payslips to employees. Built for HR/payroll teams that want a simple local or Supabase-backed workflow without Docker.
+Admin portal (**Slip Desk**) to upload employee and payroll data, generate payslip PDFs, download them, and email them to employees.
 
 ## Features
 
-- **Admin dashboard** — JWT login, overview, employee master data, payroll uploads, activity audit
-- **CSV / Excel uploads** — employee roster and monthly payroll with validation before commit
-- **Employee ID mapping** — payroll rows joined to master data; flags missing IDs, duplicates, invalid emails
-- **Preview tables** — TanStack Table preview with net salary: `Base + HRA + Allowances − Deductions`
-- **PDF generation** — Jinja2 templates; WeasyPrint or ReportLab fallback on Windows
-- **Downloads** — single PDF per employee or ZIP for the whole job
-- **Email dispatch** — SMTP (Gmail app password supported); per-recipient failure messages in the UI
-- **Supabase** — optional PostgreSQL + Storage buckets for uploads and payslips
-- **Audit log** — uploads, PDF jobs, and email runs
+- JWT admin login with session expiry handling
+- Employee roster and monthly payroll upload (CSV / Excel) with validation preview
+- PDF generation with progress tracking and per-employee download or ZIP export
+- SMTP email dispatch with delivery status in the UI
+- Optional Supabase PostgreSQL + Storage, or local SQLite and filesystem
+- Audit log of uploads, PDF jobs, and email runs
 
 ## Stack
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React (Vite), TypeScript, Tailwind CSS, shadcn-style UI, TanStack Table |
-| Backend | Flask, Flask-CORS, SQLAlchemy, JWT, Celery |
-| Database | SQLite (local default) or Supabase PostgreSQL |
-| Background jobs | Celery inline by default (`CELERY_TASK_ALWAYS_EAGER=true`) — no Redis required |
-| PDF | Jinja2 + WeasyPrint / ReportLab |
-| Email | SMTP |
-| File storage | Supabase Storage (`uploads`, `payslips`) or local `backend/storage/` |
-
-## Documentation
-
-| Doc | Description |
-|-----|-------------|
-| [backend/.env.example](backend/.env.example) | **Environment template — copy to `backend/.env` and fill in values** |
-| [docs/architecture.md](docs/architecture.md) | System diagram and request flows |
-| [docs/schema.sql](docs/schema.sql) | PostgreSQL DDL |
-| [docs/supabase-storage.md](docs/supabase-storage.md) | Supabase buckets and service role key |
-| [docs/screenshots/README.md](docs/screenshots/README.md) | Suggested screenshots for submissions |
+| Frontend | React, Vite, TypeScript, Tailwind, TanStack Query & Table |
+| Backend | Flask, SQLAlchemy, JWT |
+| Database | SQLite (local default) or Supabase Postgres |
+| PDF / email | ReportLab or WeasyPrint, SMTP (runs inline — no Redis required by default) |
 
 ## Prerequisites
 
-- Node.js 20+
-- Python 3.11+
-- (Recommended) [Supabase](https://supabase.com) project for production DB + file storage
-- (Optional) Gmail account with **App Password** for sending email
+- **Node.js** 20+
+- **Python** 3.11+
+- *(Optional)* [Supabase](https://supabase.com) project for hosted DB + file storage
+- *(Optional)* Gmail [App Password](https://myaccount.google.com/apppasswords) for sending email
 
-**Not required:** Docker, Redis, or a separate Celery worker (default configuration).
+## Local setup
 
-## Configuration
-
-All settings are driven by environment variables. **Do not commit secrets.**
-
-1. Copy the example file:
-
-   ```powershell
-   cd backend
-   copy .env.example .env
-   ```
-
-2. Open **`backend/.env`** and set values using [backend/.env.example](backend/.env.example) as the reference. Each variable is documented there.
-
-   | Area | Key variables | Notes |
-   |------|----------------|-------|
-   | App / auth | `SECRET_KEY`, `JWT_SECRET_KEY`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Default admin is created on first run |
-   | Database | `USE_SQLITE`, `DATABASE_URL` | `USE_SQLITE=true` uses `backend/dev.db`; set `false` + Supabase URI for hosted Postgres |
-   | Branding | `COMPANY_NAME` | PDFs and emails (default: `Nippon Toyota`); regenerate PDFs after changes |
-   | Background jobs | `CELERY_TASK_ALWAYS_EAGER` | `true` (default) runs PDF/email in Flask — no worker process |
-   | Supabase files | `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_*_BUCKET` | Service role key from **Project Settings → API** |
-   | SMTP | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Gmail: use a 16-char [App Password](https://myaccount.google.com/apppasswords), not your login password |
-   | Local files | `UPLOAD_FOLDER`, `PAYSLIP_FOLDER` | Used when Supabase storage keys are empty |
-
-3. Install Python dependencies:
-
-   ```powershell
-   python -m venv .venv
-   .venv\Scripts\activate
-   pip install -r requirements.txt
-   # Optional local extras (WeasyPrint, pandas, Celery):
-   pip install -r requirements-dev.txt
-   ```
-
-## Deploy backend on Vercel
-
-1. **Root Directory** → `backend`
-2. **Framework Preset** → **Flask** (or Other with Python detected via `main.py` + `pyproject.toml`)
-3. **Install Command** (override ON): `pip install --upgrade pip && pip install --prefer-binary -r requirements-vercel.txt` — leave **Build Command** empty  
-   (`backend/vercel.json` also sets this if dashboard overrides are off)
-4. Entry point is **`main.py`** (`main:app` in `pyproject.toml`) — required because the Flask package lives in the `app/` folder
-5. **Required env vars:** `DATABASE_URL` (Supabase **Session pooler**, port **6543** — not `db.*:5432`), `SECRET_KEY`, `JWT_SECRET_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, plus SMTP/admin vars from [backend/.env.example](backend/.env.example)
-
-   Get pooler URI: Supabase → **Project Settings → Database → Connection string → Session pooler → URI**
-
-6. **First deploy:** In Supabase **SQL Editor**, run [docs/schema.sql](docs/schema.sql) to create tables (Vercel skips auto `create_all`).
-
-7. Test: `https://your-api.vercel.app/api/health` → `{"status":"ok"}`
-
-8. Setup admin: `POST https://your-api.vercel.app/api/auth/setup` (note the `/api` prefix)
-
-**If login shows CORS + 404:** the backend is not serving Flask yet (Vercel returns 404 with no CORS headers). Push `backend/main.py`, redeploy the **backend** project, then confirm `/api/health` in the browser before testing the frontend.
-
-**Slow API responses:** Vercel serverless has a **cold start** (2–5s) after idle time. The backend skips Supabase bucket checks on startup and uses a single `/api/dashboard/summary` call for the overview. First request after idle will still be slower than a always-on server.
-
-**Common error:** `Cannot assign requested address` on `db.*.supabase.co:5432` → switch `DATABASE_URL` to the **pooler** URL (port **6543**). Bundle > 245 MB → ensure install uses `requirements-vercel.txt`.
-
-**Frontend (separate project):** Root Directory `frontend`, set `VITE_API_URL` to your **backend** URL (e.g. `https://employee-salaryslip-nippon-2p1u.vercel.app` — `/api` is added automatically). Redeploy frontend after changing env vars.
-
-## Quick start
-
-### Backend
+### 1. Backend
 
 ```powershell
 cd backend
+python -m venv .venv
 .venv\Scripts\activate
+pip install -r requirements.txt
+pip install -r requirements-dev.txt   # WeasyPrint, pandas — optional but recommended locally
+copy .env.example .env
+```
+
+Edit **`backend/.env`**. For the quickest start, defaults work out of the box:
+
+- `USE_SQLITE=true` — uses `backend/dev.db` (no Postgres install)
+- `CELERY_TASK_ALWAYS_EAGER=true` — PDFs and emails run inside Flask (no Redis)
+- Leave Supabase vars empty — files go to `backend/storage/`
+
+See [backend/.env.example](backend/.env.example) for all variables (SMTP, Supabase, admin credentials).
+
+Start the API:
+
+```powershell
 python run.py
 ```
 
-API: http://localhost:5000 — health check: http://localhost:5000/api/health
+- API: http://localhost:5000  
+- Health: http://localhost:5000/api/health  
 
-### Frontend
+### 2. Frontend
 
 ```powershell
 cd frontend
@@ -123,114 +65,81 @@ npm install
 npm run dev
 ```
 
-App: http://localhost:5173
+- App: http://localhost:5173  
+- API calls proxy to `http://localhost:5000` — no frontend `.env` needed for local dev
 
-**Default login** (from `.env`): `admin@company.com` / `admin123` — change via `ADMIN_EMAIL` and `ADMIN_PASSWORD` in [backend/.env.example](backend/.env.example).
+### 3. Sign in
 
-## Usage workflow
+Default credentials (from `.env`):
 
-1. **Employees** — Upload `samples/employees.csv` or [samples/test_ashwin_employees.csv](samples/test_ashwin_employees.csv) → preview → import.
-2. **Payroll** — Upload [samples/payroll_may_2026.csv](samples/payroll_may_2026.csv) or [samples/test_ashwin_payroll.csv](samples/test_ashwin_payroll.csv) → preview (validates employee IDs) → save batch.
-3. **Generate PDFs** — On a batch, click **Generate PDFs**. Job status updates when complete (`completed` / `completed_with_errors`).
-4. **Download** — **Download all (ZIP)** or per-employee **PDF** buttons on the job panel.
-5. **Send emails** — **Send payslip emails** (requires valid `SMTP_*` in `.env`). If a send fails, the UI shows the SMTP error (e.g. Gmail `BadCredentials`).
-6. **Activity** — Review audit entries for uploads, PDF generation, and email dispatch.
+| | |
+|---|---|
+| Email | `admin@company.com` |
+| Password | `admin123` |
 
-## Gmail SMTP (common setup)
+Change via `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `backend/.env`.
 
-1. Enable **2-Step Verification** on your Google account.
-2. Create an **App password** (name is optional — e.g. `employee-salaryslip-nippon`).
-3. In `backend/.env`:
+## Usage
+
+1. **Employees** — Upload a roster CSV (use **Download sample CSV** on the page) → preview → import.
+2. **Payroll** — Upload monthly salary data (sample CSV available on the page) → preview → save batch.  
+   Payroll rows must match existing employee IDs.
+3. **Generate PDFs** — Click **Generate PDFs** on a batch. Progress and ETA show in the job card.
+4. **Download** — **Download all (ZIP)** or individual **PDF** buttons when the job completes.
+5. **Send emails** — **Send payslip emails** (requires SMTP in `.env`).
+6. **Activity** — View the audit trail.
+
+Sample files are also in [`samples/`](samples/) at the repo root.
+
+**Net salary:** `Base + HRA + Allowances − Deductions` (validated on upload).
+
+## Optional configuration
+
+### Supabase (Postgres + Storage)
+
+1. Run [docs/schema.sql](docs/schema.sql) in the Supabase SQL Editor.
+2. In `backend/.env`:
 
    ```env
-   SMTP_HOST=smtp.gmail.com
-   SMTP_PORT=587
-   SMTP_USER=you@gmail.com
-   SMTP_PASSWORD=your16charapppassword
-   SMTP_FROM=you@gmail.com
-   SMTP_USE_TLS=true
+   USE_SQLITE=false
+   DATABASE_URL=postgresql://postgres.PROJECT_REF:PASSWORD@...pooler.supabase.com:6543/postgres?sslmode=require
+   SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+   SUPABASE_SERVICE_KEY=your-service-role-key
    ```
 
-4. Restart Flask and retry **Send payslip emails**.
+   Use the **Session pooler** URI (port **6543**), not direct `db.*:5432`.  
+   See [docs/supabase-storage.md](docs/supabase-storage.md) for bucket setup.
 
-Test login only:
-
-```powershell
-cd backend
-.venv\Scripts\python -c "import os; from dotenv import load_dotenv; load_dotenv('.env'); import smtplib; s=smtplib.SMTP(os.getenv('SMTP_HOST'), int(os.getenv('SMTP_PORT',587))); s.starttls(); s.login(os.getenv('SMTP_USER'), os.getenv('SMTP_PASSWORD')); print('SMTP OK'); s.quit()"
-```
-
-## Optional: Redis + Celery worker
-
-For large batches, set in `backend/.env` (see [backend/.env.example](backend/.env.example)):
+### Gmail SMTP
 
 ```env
-CELERY_TASK_ALWAYS_EAGER=false
-CELERY_BROKER_URL=redis://localhost:6379/0
-CELERY_RESULT_BACKEND=redis://localhost:6379/0
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=you@gmail.com
+SMTP_PASSWORD=your-16-char-app-password
+SMTP_FROM=you@gmail.com
+SMTP_USE_TLS=true
 ```
 
-Install Redis locally, then:
+Requires 2-Step Verification and an App Password on your Google account.
 
-```powershell
-cd backend
-.venv\Scripts\activate
-celery -A celery_worker.celery worker --loglevel=info --pool=solo
-```
+## Deploy (Vercel)
 
-## API overview
+Two separate Vercel projects:
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/login` | JWT login |
-| POST | `/api/auth/setup` | Bootstrap admin from env |
-| GET | `/api/dashboard/summary` | Overview counts + recent batches/jobs |
-| GET | `/api/employees` | List employees |
-| POST | `/api/employees/upload/preview` | Validate employee file |
-| POST | `/api/employees/upload/commit` | Save employees |
-| GET | `/api/payroll/batches` | List payroll batches |
-| POST | `/api/payroll/upload/preview` | Validate payroll file |
-| POST | `/api/payroll/upload/commit` | Save payroll batch |
-| POST | `/api/payslips/generate` | Start PDF job |
-| GET | `/api/payslips/jobs/:id` | Job status, documents, email stats |
-| GET | `/api/payslips/documents/:id/download` | Download one PDF |
-| GET | `/api/payslips/jobs/:id/download` | Download all PDFs as ZIP |
-| POST | `/api/payslips/dispatch` | Send payslip emails |
-| GET | `/api/audit` | Audit log |
+| Project | Root directory | Notes |
+|---------|----------------|-------|
+| Backend | `backend` | Flask entry: `main.py`. Install: `requirements-vercel.txt`. Set env vars from `.env.example`. Run `docs/schema.sql` in Supabase first. |
+| Frontend | `frontend` | Set `VITE_API_URL` to your backend URL. `vercel.json` handles SPA routing. |
 
-Protected routes require header: `Authorization: Bearer <token>`.
+Test backend: `GET /api/health` → `{"status":"ok"}`.
 
 ## Project structure
 
 ```
-employee-salaryslip-nippon/
-├── backend/
-│   ├── .env.example          # ← copy to .env
-│   ├── app/
-│   │   ├── api/
-│   │   ├── models/
-│   │   ├── services/
-│   │   ├── tasks/
-│   │   └── templates/
-│   ├── storage/              # local fallback (uploads, payslips)
-│   ├── requirements-vercel.txt  # Slim deps for Vercel (<245 MB)
-│   ├── requirements.txt
-│   ├── requirements-dev.txt
-│   ├── vercel.json
-│   └── run.py
-├── frontend/                 # React admin UI (Slip Desk)
-├── samples/                  # CSV templates
-└── docs/
+├── backend/          Flask API, models, PDF/email services
+├── frontend/         React admin UI (Slip Desk)
+├── samples/          Example CSV files
+└── docs/             Schema, architecture, Supabase notes
 ```
 
-## Net salary formula
-
-```
-Net Salary = Base Salary + HRA + Allowances − Deductions
-```
-
-Validated on payroll upload and shown on each payslip PDF.
-
-## License
-
-MIT
