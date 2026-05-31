@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.extensions import db
 
@@ -22,5 +22,9 @@ class AuditLog(db.Model):
             "entity_id": self.entity_id,
             "details": self.details,
             "admin_email": self.admin_email,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": (
+                self.created_at.replace(tzinfo=timezone.utc).isoformat()
+                if self.created_at
+                else None
+            ),
         }

@@ -1,13 +1,17 @@
 import { useQuery } from "@tanstack/react-query"
+import { Loader2 } from "lucide-react"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatDateTimeIst } from "@/lib/datetime"
 import { fetchAuditLogs, queryKeys } from "@/lib/queries"
 
 export function AuditPage() {
-  const { data: logs = [], isPending } = useQuery({
+  const { data: logs = [], isPending, isFetching } = useQuery({
     queryKey: queryKeys.audit,
     queryFn: fetchAuditLogs,
   })
+
+  const isRefreshing = isFetching && !isPending
 
   return (
     <div>
@@ -16,6 +20,23 @@ export function AuditPage() {
         description="Audit trail for uploads, PDFs, and emails"
       />
 
+      {isRefreshing && (
+        <p
+          className="mb-4 flex items-center gap-2 text-sm text-[var(--color-muted)]"
+          role="status"
+          aria-live="polite"
+        >
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--color-accent)]" aria-hidden />
+          Updating activity…
+        </p>
+      )}
+
+      {isPending && (
+        <p className="mb-4 text-sm text-[var(--color-muted)]" role="status" aria-live="polite">
+          Loading activity…
+        </p>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Recent events</CardTitle>
@@ -23,7 +44,9 @@ export function AuditPage() {
         </CardHeader>
         <CardContent>
           {isPending ? (
-            <p className="text-sm text-[var(--color-muted)]">Loading activity…</p>
+            <p className="text-sm text-[var(--color-muted)]">Fetching recent events…</p>
+          ) : logs.length === 0 ? (
+            <p className="text-sm text-[var(--color-muted)]">No activity yet.</p>
           ) : (
             <ul className="space-y-4">
               {logs.map((log) => (
@@ -35,8 +58,12 @@ export function AuditPage() {
                     <span className="text-sm font-medium text-[var(--color-ink)]">
                       {log.action.replace(/_/g, " ")}
                     </span>
-                    <time className="shrink-0 text-xs text-[var(--color-muted)]">
-                      {new Date(log.created_at).toLocaleString()}
+                    <time
+                      className="shrink-0 text-xs text-[var(--color-muted)]"
+                      dateTime={log.created_at}
+                      title="IST (UTC+5:30)"
+                    >
+                      {formatDateTimeIst(log.created_at)} IST
                     </time>
                   </div>
                   {log.details && (
