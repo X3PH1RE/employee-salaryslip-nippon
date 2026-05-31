@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, cardHeaderRow } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { SampleCsvDownload } from "@/components/SampleCsvDownload"
 import { fetchEmployees, invalidateAfterEmployeeChange, queryKeys } from "@/lib/queries"
 
 export function EmployeesPage() {
@@ -72,9 +73,15 @@ export function EmployeesPage() {
       />
 
       <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Upload roster</CardTitle>
-          <CardDescription>CSV or Excel with employee_id, name, email, designation</CardDescription>
+        <CardHeader className={cardHeaderRow}>
+          <div className="min-w-0">
+            <CardTitle>Upload roster</CardTitle>
+            <CardDescription>CSV or Excel with employee_id, name, email, designation</CardDescription>
+          </div>
+          <SampleCsvDownload
+            href="/samples/employees.csv"
+            filename="employees_sample.csv"
+          />
         </CardHeader>
         <CardContent className="space-y-4">
           <FileUploadZone onFile={onUpload} disabled={loading} />
